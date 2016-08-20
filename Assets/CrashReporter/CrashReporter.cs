@@ -214,7 +214,7 @@ public class CrashReporter
 			UnityEngine.Debug.Log ("SendDebugToMail " );
 			MailMessage mail = new MailMessage ();
 			
-			mail.From = new MailAddress ("CrashReporter");
+			mail.From = new MailAddress("CrashReporter");
 			
 			if (m_strMailingList.Length > 0 && m_strMailingList.IndexOf (";") != -1) {
 				string[] sliceList = m_strMailingList.Split (';');
@@ -272,11 +272,15 @@ public class CrashReporter
 						mail.Attachments.Add(inline);
 					}
 
-					SmtpClient smtpServer = new SmtpClient ("smtp.gmail.com", 587);
-					smtpServer.Credentials = new System.Net.NetworkCredential (gmailID, 
-					                                                           gmailPwd
-					                                                           ) as ICredentialsByHost;
+					SmtpClient smtpServer = new SmtpClient();
+					smtpServer.Host = "smtp.gmail.com";
+					smtpServer.Port = 587;
 					smtpServer.EnableSsl = true;
+					smtpServer.DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network;
+					smtpServer.UseDefaultCredentials = false;
+					smtpServer.Credentials = new System.Net.NetworkCredential (gmailID, 
+					                                                           gmailPwd) as ICredentialsByHost;
+
 					ServicePointManager.ServerCertificateValidationCallback = 
 					delegate(object s, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
 						return true;
@@ -384,7 +388,7 @@ public class CrashReporter
 #else
 		UnityEngine.Debug.Log("Assert&Exception Occured");
 
-		SGUtil.Quit();
+		Application.Quit();
 #endif
 	}
 
@@ -590,7 +594,8 @@ public class CrashReporter
 
 	public void SetCrashReporterOnlineInfo()
 	{
-#if !UNITY_EDITOR
+#if NOT_USE 
+		//!UNITY_EDITOR
 		Routine(WaitForRequest(new WWW(SGPath.GetBaseURL() + "ConfigClient/crashreporter.info"), (msg)=>{
 			string json = msg;
 			Hashtable table = SG.MiniJsonExtensions.hashtableFromJson(json);
