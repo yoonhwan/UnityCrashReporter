@@ -174,6 +174,7 @@ public class CrashReporter
 			item["ID"] = "";
 			item["PWD"] = "";
 			item["smtp"] = "mailneo.ds.neowiz.com";
+//			item["smtp"] = "jderms1.pmang.com";
 			item["ssl"] = false;
 
 			senders.Add(item);
@@ -219,7 +220,8 @@ public class CrashReporter
 					Debug.Log(msg);
 					FinalWorking ();
 				},()=>{
-
+					Debug.Log("fail");
+					FinalWorking ();
 				}));
 			});
 		}
