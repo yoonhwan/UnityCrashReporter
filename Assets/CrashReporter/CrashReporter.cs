@@ -66,7 +66,8 @@ public class CrashReporter
 	int m_nGmailIndex = 0;
 	List<GmailInfo> m_listGmailInfo = new List<GmailInfo>();
 
-	string m_strPostURL = "";
+	//string m_strPostURL = "http://ec2-52-78-32-24.ap-northeast-2.compute.amazonaws.com:3000/sendmail/1?data={0}";
+	string m_strPostURL = "http://10.30.175.216:3000/sendmail/1?data={0}";
 	UserInfo m_stUserInfo = new UserInfo();
 
 	public void StartCrashReporter(GameObject go, string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "")
@@ -126,12 +127,103 @@ public class CrashReporter
 	{
 
 	}
+
+	string GetMailingList()
+	{
+		string mailList = "";
+		if (m_strMailingList.Length > 0 && m_strMailingList.IndexOf (";") != -1) {
+			string[] sliceList = m_strMailingList.Split (';');
+			for (int i = 0; i < sliceList.Length; i++) {
+				mailList+=sliceList [i] + ",";
+			}
+		} else if (m_strMailingList.Length > 0) {
+			mailList = m_strMailingList;
+		}
+		return mailList;
+	}
+
 	IEnumerator SendDebugToServer (LogType type, string trace)
 	{
-		WWW www = new WWW (m_strPostURL, System.Text.ASCIIEncoding.ASCII.GetBytes (MakeMassageHeader(BufferToText())));
-		yield return www;
 
-		FinalWorking ();
+		if (m_bCrashCatched != true) {
+			m_bCrashCatched = true;
+			string function = trace;
+			AnalyticsImplement(type,trace);
+			
+			UnityEngine.Debug.Log ("SendDebugToServer " );
+
+			string mailList = GetMailingList();
+
+			Hashtable data = new Hashtable();
+			data["subject"] = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
+			data["text"] = MakeMassageHeader(BufferToText());
+			data["reciver"] = mailList;
+			data["from"] = "yoonhwan.ko@neowiz.com";
+
+//			item["ID"] = "yoonhwan.ko@gmail.com";
+//			item["PWD"] = "";
+//			item["smtp"] = "smtp.gmail.com";
+//			item["ssl"] = true;
+//			item["ID"] = "";
+//			item["PWD"] = "";
+//			item["smtp"] = "mailneo.ds.neowiz.com";
+//			item["ssl"] = false;
+
+			ArrayList senders = new ArrayList();
+			Hashtable item = new Hashtable();
+			item["ID"] = "";
+			item["PWD"] = "";
+			item["smtp"] = "mailneo.ds.neowiz.com";
+			item["ssl"] = false;
+
+			senders.Add(item);
+			data["sender"] = senders;
+
+#if UNITY_EDITOR
+			string attachmentPath = Application.persistentDataPath+"/exception.png";
+#else
+			string attachmentPath = "exception.png";
+#endif
+
+#if UNITY_EDITOR
+			m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "unityexceptions.txt"));
+#else
+			m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "unityexceptions.txt"));
+#endif
+			m_swWriter.WriteLine(data["text"]);
+			m_swWriter.AutoFlush = true;
+			m_swWriter.Close();
+
+			if(File.Exists(attachmentPath))
+				File.Delete(attachmentPath);
+
+			Routine (ScreenShot (attachmentPath), ()=>{
+#if !UNITY_IPHONE
+				if(File.Exists(attachmentPath))
+				{
+					byte[] imageBytes = File.ReadAllBytes(attachmentPath);
+					// Convert byte[] to Base64 String
+
+					if(imageBytes.Length>0)
+					{
+						string base64String = Convert.ToBase64String(imageBytes);
+						data["raw"] = base64String;
+						Debug.Log("file save success = " + attachmentPath);
+					}
+				}
+#endif
+				Debug.Log(SG.MiniJsonExtensions.toJson(data));
+				string base_data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(SG.MiniJsonExtensions.toJson(data)));
+				WWW www = new WWW (string.Format(m_strPostURL,base_data));
+				Routine(WaitForRequest(www,(msg)=>{
+					Debug.Log(msg);
+					FinalWorking ();
+				},()=>{
+
+				}));
+			});
+		}
+		yield return null;
 	}
 
 	IEnumerator SendDebugToFile (LogType type, string trace)
@@ -166,13 +258,13 @@ public class CrashReporter
 	IEnumerator ScreenShot(string attachmentPath)
 	{
 		UnityEngine.Debug.Log ("ScreenShot " );
+#if !UNITY_IPHONE
 		Application.CaptureScreenshot (attachmentPath);
-
+#endif
 		yield return new WaitForSeconds (1);
 
-		FileInfo info = new FileInfo (attachmentPath);
-
-		UnityEngine.Debug.Log ("ScreenShot " + info.ToString () );
+//		FileInfo info = new FileInfo (attachmentPath);
+//		UnityEngine.Debug.Log ("ScreenShot " + info.ToString () );
 
 	}
 

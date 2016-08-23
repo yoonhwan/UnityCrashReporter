@@ -10,17 +10,17 @@ System Infomation
 
 Model:MacPro6,1, Name:IgniteClan의 Mac Pro, Type:Desktop
 System:Mac OS X 10.11.5, Lang:, MemSize:32768, ProcCount:8, ProcType:x Intel(R) Xeon(R) CPU E5-1620 v2 @ 3.70GHz
-Screen:1920x1080, DPI:72dpi, FullScreen:False, AMD Radeon HD - FirePro D300 OpenGL Engine, ATI Technologies Inc., vmem: 2048, Fill: -1 Max Texture: 16384
+Screen:1920x1080, DPI:72dpi, FullScreen:False, Emulated GPU running OpenGL ES 2.0, Emulated, vmem: 2048, Fill: -1 Max Texture: 4096
 
 Scene CrashTestScene, Unity Version 4.7.2f1
 
 ------------------------------------------------------------------------------
 Memory Status
 
-Total:3739648Bytes
-Texture:7881489Bytes
-Mash:248808Bytes
-Material:4584Bytes
+Total:3751936Bytes
+Texture:8079829Bytes
+Mash:58140Bytes
+Material:6300Bytes
 Animation:0
 Audio:0
 
@@ -29,7 +29,7 @@ Audio:0
 Log & Stack Trace
 
 ------------------------------------------------------------------------------
-Type : Exception Time : 4.622053
+Type : Exception Time : 0.591053
  Condition : Exception: Exception of type 'System.Exception' was thrown.
 Stack: NewBehaviourScript.TestRun () (at Assets/NewBehaviourScript.cs:32)
 UnityEngine.Events.InvokableCall.Invoke (System.Object[] args)

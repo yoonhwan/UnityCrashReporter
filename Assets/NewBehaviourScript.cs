@@ -12,7 +12,7 @@ public class NewBehaviourScript : MonoBehaviour {
 		                                     clientVersion: "1.0.0",//VersionController.GetVersion (),
 		                                     gmailID: "queens9tft@gmail.com",
 		                                     gmailPWD: "qwerasdf@@",
-		                                     mailingList: "yoonhwan.ko@neowiz.com");
+		                                     mailingList: "yoonhwan.ko@neowiz.com;yoonhwan.ko@gmail.com");
 
 	}
 	
@@ -28,7 +28,7 @@ public class NewBehaviourScript : MonoBehaviour {
 
 	public void TestRun()
 	{
-		m_cCrashReporter.m_eWriteMode = eCrashWriteType.EWRITEMAIL;
+		m_cCrashReporter.m_eWriteMode = eCrashWriteType.EWRITESERVER;
 		throw new System.Exception();
 	}
 }
