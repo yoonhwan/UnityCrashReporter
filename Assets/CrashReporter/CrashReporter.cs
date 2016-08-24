@@ -1,4 +1,4 @@
-﻿// before unity 5.0
+// before unity 5.0
 #define USE_OLD_UNITY_REPORTER
 
 using System;
@@ -29,6 +29,7 @@ public class CrashReporter
 	static bool m_bCrashCatched = false;
 	public GameObject m_goMonoBehaviourObject;
 	public eCrashWriteType m_eWriteMode = eCrashWriteType.EWRITEMAIL;
+	public bool m_bScreenShotSupport = false;
 	public string m_strBuild_version = "1.0";
 	public string m_strGmailID = "";
 	public string m_strGmailPWD = "";
@@ -179,31 +180,15 @@ public class CrashReporter
 			senders.Add(item);
 			data["sender"] = senders;
 
-#if UNITY_EDITOR
-			string attachmentPath = Application.persistentDataPath+"/exception.png";
-#else
-			string attachmentPath = "exception.png";
-#endif
+			WriteFileLog(data["text"].ToString());
 
-#if UNITY_EDITOR
-			m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "unityexceptions.txt"));
-#else
-			m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "unityexceptions.txt"));
-#endif
-			m_swWriter.WriteLine(data["text"]);
-			m_swWriter.AutoFlush = true;
-			m_swWriter.Close();
-
-			if(File.Exists(attachmentPath))
-				File.Delete(attachmentPath);
-
-			Routine (ScreenShot (attachmentPath), ()=>{
+			ScreenShotRoutine((attachmentPath)=>{
 #if !UNITY_IPHONE
 				if(File.Exists(attachmentPath))
 				{
 					byte[] imageBytes = File.ReadAllBytes(attachmentPath);
 					// Convert byte[] to Base64 String
-
+					
 					if(imageBytes.Length>0)
 					{
 						string base64String = Convert.ToBase64String(imageBytes);
@@ -213,13 +198,13 @@ public class CrashReporter
 				}
 #endif
 				string base_data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(SG.MiniJsonExtensions.toJson(data)));
-
+				
 #if USING_GET
 				WWW www = new WWW (m_strPostURL+"?data="+base_data);
 #else
 				WWWForm form = new WWWForm();
 				form.AddField("data",base_data);
-
+				
 				WWW www = new WWW (m_strPostURL, form);
 #endif
 				Routine(WaitForRequest(www,(msg)=>{
@@ -234,33 +219,43 @@ public class CrashReporter
 		yield return null;
 	}
 
+
 	IEnumerator SendDebugToFile (LogType type, string trace)
 	{
 		Debug.Log ("SendDebugToFile");
-#if UNITY_ANDROID || UNITY_IPHONE
-		string attachmentPath = "exception.png";
+
+		ScreenShotRoutine((attachmentPath)=>{
+
+			WriteFileLog(BufferToText());
+			FinalWorking ();
+		});
+		yield return null;
+	}
+
+	void ScreenShotRoutine(Action<string> callback)
+	{
+		if(m_bScreenShotSupport==false)
+		{
+			callback("");
+			return;
+		}
+#if UNITY_EDITOR
+		string attachmentPath = Application.persistentDataPath+"/exception.png";
 #else
-		string attachmentPath = Application.dataPath + "/exception.png";
+		string attachmentPath = "exception.png";
 #endif
+		
 		if(File.Exists(attachmentPath))
 			File.Delete(attachmentPath);
 
 		Routine (ScreenShot (attachmentPath), ()=>{
-#if UNITY_ANDROID || UNITY_IPHONE
-			m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "unityexceptions.txt"));
-#else
-			m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "unityexceptions.txt"));
-#endif
-			m_swWriter.AutoFlush = true;
-			
-			m_swWriter.WriteLine(MakeMassageHeader(BufferToText()));
-			m_swWriter.Close();
-			
-			FinalWorking ();
-			
-		});
 
-		yield return null;
+			if(File.Exists(attachmentPath))
+			{
+				callback(attachmentPath);
+			}else
+				callback("");
+		});
 	}
 
 	IEnumerator ScreenShot(string attachmentPath)
@@ -332,32 +327,10 @@ public class CrashReporter
 			
 			mail.Body = MakeMassageHeader(BufferToText());
 			
-			UnityEngine.Debug.Log ("SendDebugToMail " + mail.Subject );
-#if UNITY_ANDROID || UNITY_IPHONE
-			string attachmentPath = "exception.png";
-#else
-			string attachmentPath = Application.persistentDataPath+"/exception.png";
-#endif
-			
-			if(File.Exists(attachmentPath))
-				File.Delete(attachmentPath);
 
-			Routine (ScreenShot (attachmentPath), ()=>{
-				
-#if UNITY_ANDROID || UNITY_IPHONE
-				attachmentPath = Application.persistentDataPath+"/exception.png";
-#endif
-				
-#if UNITY_ANDROID || UNITY_IPHONE
-				m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "unityexceptions.txt"));
-#else
-				m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "unityexceptions.txt"));
-#endif
-				m_swWriter.AutoFlush = true;
-				
-				m_swWriter.WriteLine(mail.Body);
-				m_swWriter.Close();
-				
+			ScreenShotRoutine( (attachmentPath)=>{
+
+				WriteFileLog(mail.Body);
 				try {
 					if(File.Exists(attachmentPath))
 					{
@@ -389,10 +362,6 @@ public class CrashReporter
 					smtpServer.Send(mail);
 					UnityEngine.Debug.Log("send finish");
 
-#if UNITY_ANDROID || UNITY_IPHONE
-					if(File.Exists(attachmentPath))
-						File.Delete(attachmentPath);
-#endif
 					FinalWorking();
 					
 				} catch (Exception ex) {
@@ -742,5 +711,18 @@ public class CrashReporter
 		} else {
 			success.Invoke(www.text);
 		}  
+	}
+
+	void WriteFileLog(string message)	
+	{
+#if UNITY_ANDROID || UNITY_IPHONE
+		m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "unityexceptions.txt"));
+#else
+		m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "unityexceptions.txt"));
+#endif
+		m_swWriter.AutoFlush = true;
+		
+		m_swWriter.WriteLine(message);
+		m_swWriter.Close();
 	}
 }
