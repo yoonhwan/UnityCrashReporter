@@ -66,8 +66,8 @@ public class CrashReporter
 	int m_nGmailIndex = 0;
 	List<GmailInfo> m_listGmailInfo = new List<GmailInfo>();
 
-	//string m_strPostURL = "http://ec2-52-78-32-24.ap-northeast-2.compute.amazonaws.com:3000/sendmail/1?data={0}";
-	string m_strPostURL = "http://10.30.175.216:3000/sendmail/1?data={0}";
+	string m_strPostURL = "http://ec2-52-78-140-163.ap-northeast-2.compute.amazonaws.com:3000/sendmail/1?data={0}";
+//	string m_strPostURL = "http://10.30.175.216:3000/sendmail/1?data={0}";
 	UserInfo m_stUserInfo = new UserInfo();
 
 	public void StartCrashReporter(GameObject go, string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "")
@@ -167,16 +167,15 @@ public class CrashReporter
 //			item["ID"] = "";
 //			item["PWD"] = "";
 //			item["smtp"] = "mailneo.ds.neowiz.com";
+//			item["smtp"] = "jderms1.pmang.com";
 //			item["ssl"] = false;
 
 			ArrayList senders = new ArrayList();
 			Hashtable item = new Hashtable();
-			item["ID"] = "";
+			item["ID"] = "yoonhwan.ko@gmail.com";
 			item["PWD"] = "";
-			item["smtp"] = "mailneo.ds.neowiz.com";
-//			item["smtp"] = "jderms1.pmang.com";
-			item["ssl"] = false;
-
+			item["smtp"] = "smtp.gmail.com";
+			item["ssl"] = true;
 			senders.Add(item);
 			data["sender"] = senders;
 
@@ -717,14 +716,24 @@ public class CrashReporter
 	}
 	IEnumerator WaitForRequest(WWW www, Action<string> success, Action fail)
 	{
-		yield return www;
+		float timer = 0; 
+		bool failed = false;
 		
-		// check for errors
-		if (www.error == null)
-		{
-			success.Invoke(www.text);
-		} else {
+		while(!www.isDone){
+			if(timer > 7){ 
+				failed = true; 
+				break; 
+			}
+			timer += Time.deltaTime;
+			yield return new WaitForEndOfFrame();
+		}
+		
+		if (failed || www.error != null) {
+			string msg = (failed?"istimeout":www.error);
+			Debug.Log(msg);
 			fail.Invoke();
-		}    
+		} else {
+			success.Invoke(www.text);
+		}  
 	}
 }
