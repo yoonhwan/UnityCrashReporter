@@ -66,8 +66,8 @@ public class CrashReporter
 	int m_nGmailIndex = 0;
 	List<GmailInfo> m_listGmailInfo = new List<GmailInfo>();
 
-	string m_strPostURL = "http://ec2-52-78-140-163.ap-northeast-2.compute.amazonaws.com:3000/sendmail/1?data={0}";
-//	string m_strPostURL = "http://10.30.175.216:3000/sendmail/1?data={0}";
+//	string m_strPostURL = "http://ec2-52-78-140-163.ap-northeast-2.compute.amazonaws.com:3000/sendmail/1";
+	string m_strPostURL = "http://10.30.175.216:3000/sendmail/1";
 	UserInfo m_stUserInfo = new UserInfo();
 
 	public void StartCrashReporter(GameObject go, string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "")
@@ -173,7 +173,7 @@ public class CrashReporter
 			ArrayList senders = new ArrayList();
 			Hashtable item = new Hashtable();
 			item["ID"] = "yoonhwan.ko@gmail.com";
-			item["PWD"] = "";
+			item["PWD"] = "ggoggo07#@";
 			item["smtp"] = "smtp.gmail.com";
 			item["ssl"] = true;
 			senders.Add(item);
@@ -212,9 +212,16 @@ public class CrashReporter
 					}
 				}
 #endif
-				Debug.Log(SG.MiniJsonExtensions.toJson(data));
 				string base_data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(SG.MiniJsonExtensions.toJson(data)));
-				WWW www = new WWW (string.Format(m_strPostURL,base_data));
+
+#if USING_GET
+				WWW www = new WWW (m_strPostURL+"?data="+base_data);
+#else
+				WWWForm form = new WWWForm();
+				form.AddField("data",base_data);
+
+				WWW www = new WWW (m_strPostURL, form);
+#endif
 				Routine(WaitForRequest(www,(msg)=>{
 					Debug.Log(msg);
 					FinalWorking ();
