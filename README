@@ -52,3 +52,6 @@ inst.SetCrashReporterOnlineInfo("http://msg.devmdl.pmang.com/ConfigClient/crashr
     "subject" : "test subject",
     "text" : "test text"
 }
+
+//Email Post Server Github open source Host
+https://github.com/yoonhwan/Sending-gmail-smtp-for-CrashReport
