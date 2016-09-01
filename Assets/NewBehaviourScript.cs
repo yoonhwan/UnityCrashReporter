@@ -9,11 +9,11 @@ public class NewBehaviourScript : MonoBehaviour {
 		m_cCrashReporter.StartCrashReporter (this.gameObject, 
 		                                     projectname: "CrashReporter Test",
 		                                     type: eCrashWriteType.EWRITEMAIL,
-		                                     clientVersion: "1.0.0",//VersionController.GetVersion (),
-		                                     gmailID: "queens9tft@gmail.com",
-		                                     gmailPWD: "qwerasdf@@",
+		                                     clientVersion: "1.0.0",
+		                                     gmailID: "",
+		                                     gmailPWD: "",
 		                                     mailingList: "yoonhwan.ko@neowiz.com;yoonhwan.ko@gmail.com");
-
+		m_cCrashReporter.SetCrashReporterOnlineInfo("http://msg.devmdl.pmang.com/ConfigClient/crashreporter.info");
 	}
 	
 	// Update is called once per frame

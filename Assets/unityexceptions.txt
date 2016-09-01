@@ -17,10 +17,10 @@ Scene CrashTestScene, Unity Version 4.7.2f1
 ------------------------------------------------------------------------------
 Memory Status
 
-Total:3596288Bytes
-Texture:8176033Bytes
-Mash:58140Bytes
-Material:6852Bytes
+Total:3178496Bytes
+Texture:7244025Bytes
+Mash:210348Bytes
+Material:3568Bytes
 Animation:0
 Audio:0
 
@@ -29,7 +29,7 @@ Audio:0
 Log & Stack Trace
 
 ------------------------------------------------------------------------------
-Type : Exception Time : 0.541751
+Type : Exception Time : 0.720882
  Condition : Exception: Exception of type 'System.Exception' was thrown.
 Stack: NewBehaviourScript.TestRun () (at Assets/NewBehaviourScript.cs:32)
 UnityEngine.Events.InvokableCall.Invoke (System.Object[] args)

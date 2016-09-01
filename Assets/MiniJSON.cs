@@ -712,6 +712,12 @@ namespace SG	{
 
 	public static class MiniJsonExtensions
 	{
+
+		public static string toJson( this ArrayList obj )
+		{
+			return MiniJSON.jsonEncode( obj );
+		}
+
 	    public static string toJson( this Hashtable obj )
 	    {
 	        return MiniJSON.jsonEncode( obj );

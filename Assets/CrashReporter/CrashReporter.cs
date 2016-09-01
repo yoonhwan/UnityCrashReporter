@@ -31,8 +31,6 @@ public class CrashReporter
 	public eCrashWriteType m_eWriteMode = eCrashWriteType.EWRITEMAIL;
 	public bool m_bScreenShotSupport = false;
 	public string m_strBuild_version = "1.0";
-	public string m_strGmailID = "";
-	public string m_strGmailPWD = "";
 	public string m_strProjectName;
 	public string m_strMailingList;
 
@@ -52,25 +50,69 @@ public class CrashReporter
 		public string teamname;	//player team or caractor type
 	}
 
-	class GmailInfo	{
-		public GmailInfo(string id, string pwd){
+	class SmtpMailInfo	{
+		public SmtpMailInfo(string id, string pwd, string smtp, bool ssl){
 			userID = id;
 			userPwd = pwd;
+			smtpHost = smtp;
+			sslEnable = ssl;
 		}
 		public string userID;
 		public string userPwd;
+		public string smtpHost;
+		public bool sslEnable;
+	}
+
+	class ServerInfo	{
+		public ServerInfo(string serverHost){
+			SetServerHost(serverHost);
+			nSmtpInfoIndex = 0;
+
+			smtpList = new List<SmtpMailInfo>();
+		}
+		
+		public string host;
+
+		int nSmtpInfoIndex;
+		List<SmtpMailInfo> smtpList;
+
+		public void SetServerHost(string serverHost)
+		{
+			host = serverHost;
+		}
+
+		public SmtpMailInfo GetCurrentSmtp()	{
+
+			if(smtpList.Count > nSmtpInfoIndex)
+				return smtpList[nSmtpInfoIndex];
+
+			return null;
+		}
+
+		public void SetNextSmtp()	{
+			nSmtpInfoIndex++;
+		}
+
+		public void ResetSmtpIndex()	{
+			nSmtpInfoIndex=0;
+		}
+
+		public void ClearSmtpList()	{
+			smtpList.Clear();
+		}
+
+		public void AddSmtp(SmtpMailInfo smtp)	{
+			ResetSmtpIndex();
+			smtpList.Add(smtp);
+		}
 	}
 
 	List<LogStruct> m_listLogBuffer = new List<LogStruct>();
 	List<LogStruct> m_listLogBufferThread = new List<LogStruct>();
 
-	int m_nGmailIndex = 0;
-	List<GmailInfo> m_listGmailInfo = new List<GmailInfo>();
-
-//	string m_strPostURL = "http://ec2-52-78-140-163.ap-northeast-2.compute.amazonaws.com:3000/sendmail/1";
-	string m_strPostURL = "http://10.30.175.216:3000/sendmail/1";
 	UserInfo m_stUserInfo = new UserInfo();
 
+	ServerInfo m_stServerInfo = new ServerInfo("http://182.162.249.23:38320/sendmail/1");
 	public void StartCrashReporter(GameObject go, string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "")
 	{
 
@@ -104,14 +146,9 @@ public class CrashReporter
 		if(clientVersion.Length > 0)
 			m_strBuild_version = clientVersion;
 
-		if(gmailID.Length > 0)
-			m_strGmailID = gmailID;
-
-		if(gmailPWD.Length > 0)
-			m_strGmailPWD = gmailPWD;
-
-		if(gmailPWD.Length > 0)
-			m_strGmailPWD = gmailPWD;
+		if(gmailID.Length > 0)	{
+			m_stServerInfo.AddSmtp(new SmtpMailInfo(gmailID,gmailPWD,"smtp.gmail.com",true));
+		}
 
 		if (mailingList.Length > 0)
 			m_strMailingList = mailingList;
@@ -143,6 +180,27 @@ public class CrashReporter
 		return mailList;
 	}
 
+	ArrayList GetSenderList()
+	{
+		ArrayList senders = new ArrayList();
+
+		SmtpMailInfo info = null;
+		while((info = m_stServerInfo.GetCurrentSmtp()) != null)	
+		{
+			Hashtable item = new Hashtable();
+			item["id"] = info.userID;
+			item["pwd"] = info.userPwd;
+			item["smtp"] = info.smtpHost;
+			item["ssl"] = info.sslEnable;
+			senders.Add(item);
+
+			m_stServerInfo.SetNextSmtp();
+		}
+		m_stServerInfo.ResetSmtpIndex();
+
+		return senders;
+	}
+
 	IEnumerator SendDebugToServer (LogType type, string trace)
 	{
 
@@ -159,26 +217,10 @@ public class CrashReporter
 			data["subject"] = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
 			data["text"] = MakeMassageHeader(BufferToText());
 			data["reciver"] = mailList;
-			data["from"] = "yoonhwan.ko@neowiz.com";
+			data["from"] = "no-replay";
+			data["sender"] = GetSenderList();
 
-//			item["ID"] = "yoonhwan.ko@gmail.com";
-//			item["PWD"] = "";
-//			item["smtp"] = "smtp.gmail.com";
-//			item["ssl"] = true;
-//			item["ID"] = "";
-//			item["PWD"] = "";
-//			item["smtp"] = "mailneo.ds.neowiz.com";
-//			item["smtp"] = "jderms1.pmang.com";
-//			item["ssl"] = false;
-
-			ArrayList senders = new ArrayList();
-			Hashtable item = new Hashtable();
-			item["ID"] = "yoonhwan.ko@gmail.com";
-			item["PWD"] = "ggoggo07#@";
-			item["smtp"] = "smtp.gmail.com";
-			item["ssl"] = true;
-			senders.Add(item);
-			data["sender"] = senders;
+			Debug.Log(SG.MiniJsonExtensions.toJson(GetSenderList()));
 
 			WriteFileLog(data["text"].ToString());
 
@@ -205,7 +247,7 @@ public class CrashReporter
 				WWWForm form = new WWWForm();
 				form.AddField("data",base_data);
 				
-				WWW www = new WWW (m_strPostURL, form);
+				WWW www = new WWW (m_stServerInfo.host, form);
 #endif
 				Routine(WaitForRequest(www,(msg)=>{
 					Debug.Log(msg);
@@ -346,9 +388,9 @@ public class CrashReporter
 					}
 
 					SmtpClient smtpServer = new SmtpClient();
-					smtpServer.Host = "smtp.gmail.com";
+					smtpServer.Host = m_stServerInfo.GetCurrentSmtp().smtpHost;
 					smtpServer.Port = 587;
-					smtpServer.EnableSsl = true;
+					smtpServer.EnableSsl = m_stServerInfo.GetCurrentSmtp().sslEnable;
 					smtpServer.DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network;
 					smtpServer.UseDefaultCredentials = false;
 					smtpServer.Credentials = new System.Net.NetworkCredential (gmailID, 
@@ -367,13 +409,12 @@ public class CrashReporter
 				} catch (Exception ex) {
 					Debug.Log ("Can't send crashreporter mail, smtp sending error : " + ex.Message);
 
-					if(m_nGmailIndex < m_listGmailInfo.Count-1)
+					SmtpMailInfo info = m_stServerInfo.GetCurrentSmtp();
+					if(info!=null)
 					{
+						m_stServerInfo.SetNextSmtp();
 						m_bCrashCatched = false;
-						m_nGmailIndex++;
-						m_strGmailID = m_listGmailInfo[m_nGmailIndex].userID;
-						m_strGmailPWD = m_listGmailInfo[m_nGmailIndex].userPwd;
-						Routine(SendDebugToMail(type, trace, m_strGmailID, m_strGmailPWD));
+						Routine(SendDebugToMail(type, trace, info.userID, info.userPwd));
 					}
 				}
 			});
@@ -621,7 +662,7 @@ public class CrashReporter
 					break;
 				case eCrashWriteType.EWRITEMAIL:
 
-					Routine(SendDebugToMail(lastExceptionLog.type, lastExceptionLog.stacktrace, m_strGmailID, m_strGmailPWD));
+					Routine(SendDebugToMail(lastExceptionLog.type, lastExceptionLog.stacktrace, m_stServerInfo.GetCurrentSmtp().userID, m_stServerInfo.GetCurrentSmtp().userPwd));
 					break;
 				case eCrashWriteType.EWRITEGAv3:
 					SendDebugToGoogleAnalytics(lastExceptionLog.type, lastExceptionLog.stacktrace);
@@ -661,11 +702,11 @@ public class CrashReporter
 			pAction.Invoke();
 	}
 
-	public void SetCrashReporterOnlineInfo()
+	public void SetCrashReporterOnlineInfo(string strConfigFileHost)
 	{
-#if NOT_USE 
 		//!UNITY_EDITOR
-		Routine(WaitForRequest(new WWW(SGPath.GetBaseURL() + "ConfigClient/crashreporter.info"), (msg)=>{
+
+		Routine(WaitForRequest(new WWW(strConfigFileHost + "?" + Time.time), (msg)=>{
 			string json = msg;
 			Hashtable table = SG.MiniJsonExtensions.hashtableFromJson(json);
 
@@ -676,19 +717,33 @@ public class CrashReporter
 				{
 					ArrayList list = (ArrayList)table["GmailList"];
 					foreach (Hashtable item in list) {
-						m_listGmailInfo.Add(new GmailInfo(item["id"].ToString(),SGUtil.Decrypt(item["pwd"].ToString())));
+
+						m_stServerInfo.SetServerHost("");
+						m_stServerInfo.AddSmtp(new SmtpMailInfo(item["id"].ToString(),item["pwd"].ToString(), "smtp.gmail.com", true));
 					}
-					m_nGmailIndex = 0;//(new System.Random()).Next(0, m_listGmailInfo.Count-1);
-					m_strGmailID = m_listGmailInfo[m_nGmailIndex].userID;
-					m_strGmailPWD = m_listGmailInfo[m_nGmailIndex].userPwd;
+
+				}else if (m_eWriteMode == eCrashWriteType.EWRITESERVER)
+				{
+//					m_stServerInfo.GetCurrentSmtp().userID
+
+					m_stServerInfo.ClearSmtpList();
+					m_stServerInfo.ResetSmtpIndex();
+
+					Hashtable hash = (Hashtable)table["ServerInfo"];
+					m_stServerInfo.SetServerHost(hash["host"].ToString());
+
+					ArrayList list = (ArrayList)hash["SmtpList"];
+					foreach (Hashtable item in list) {
+						m_stServerInfo.AddSmtp(new SmtpMailInfo(item["id"].ToString(),item["pwd"].ToString(), item["smtp"].ToString(), (bool)item["ssl"]));
+					}
 				}
+
 			} catch (Exception ex) {
-				m_eWriteMode = eCrashWriteType.EWRITEOFF;
+				m_eWriteMode = eCrashWriteType.EWRITEGAv3;
 			}
 		}, ()=>{
 			m_eWriteMode = eCrashWriteType.EWRITEGAv3;
 		}));
-#endif
 	}
 	IEnumerator WaitForRequest(WWW www, Action<string> success, Action fail)
 	{
