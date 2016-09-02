@@ -29,7 +29,7 @@ public class CrashReporter
 	static bool m_bCrashCatched = false;
 	public GameObject m_goMonoBehaviourObject;
 	public eCrashWriteType m_eWriteMode = eCrashWriteType.EWRITEMAIL;
-	public bool m_bScreenShotSupport = false;
+	public bool m_bScreenShotSupport = true;
 	public string m_strBuild_version = "1.0";
 	public string m_strProjectName;
 	public string m_strMailingList;
@@ -225,7 +225,7 @@ public class CrashReporter
 			WriteFileLog(data["text"].ToString());
 
 			ScreenShotRoutine((attachmentPath)=>{
-#if !UNITY_IPHONE
+
 				if(File.Exists(attachmentPath))
 				{
 					byte[] imageBytes = File.ReadAllBytes(attachmentPath);
@@ -238,7 +238,7 @@ public class CrashReporter
 						Debug.Log("file save success = " + attachmentPath);
 					}
 				}
-#endif
+
 				string base_data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(SG.MiniJsonExtensions.toJson(data)));
 				
 #if USING_GET
@@ -281,36 +281,45 @@ public class CrashReporter
 			callback("");
 			return;
 		}
-#if UNITY_EDITOR
-		string attachmentPath = Application.persistentDataPath+"/exception.png";
-#else
-		string attachmentPath = "exception.png";
-#endif
+
 		
-		if(File.Exists(attachmentPath))
-			File.Delete(attachmentPath);
+		if(File.Exists(GetScreenShotFullPath()))
+			File.Delete(GetScreenShotFullPath());
 
-		Routine (ScreenShot (attachmentPath), ()=>{
+		Routine (ScreenShot (), ()=>{
 
-			if(File.Exists(attachmentPath))
+			if(File.Exists(GetScreenShotFullPath()))
 			{
-				callback(attachmentPath);
+				callback(GetScreenShotFullPath());
 			}else
 				callback("");
 		});
 	}
 
-	IEnumerator ScreenShot(string attachmentPath)
+	string GetScreenShotName()
+	{
+#if UNITY_EDITOR
+		return Application.persistentDataPath+"/exception.png";
+#else
+		return "exception.png";
+#endif
+	}
+
+	string GetScreenShotFullPath()
+	{
+		return Application.persistentDataPath+"/exception.png";
+	}
+
+	IEnumerator ScreenShot()
 	{
 		UnityEngine.Debug.Log ("ScreenShot " );
-#if !UNITY_IPHONE
-		Application.CaptureScreenshot (attachmentPath);
-#endif
+
+		Application.CaptureScreenshot (GetScreenShotName());
+
 		yield return new WaitForSeconds (1);
 
-//		FileInfo info = new FileInfo (attachmentPath);
-//		UnityEngine.Debug.Log ("ScreenShot " + info.ToString () );
-
+		FileInfo info = new FileInfo (GetScreenShotFullPath());
+		UnityEngine.Debug.Log ("ScreenShot " + info.ToString () + " size : " + info.Length);
 	}
 
 	string GetFirstFunctionName(string trace)
