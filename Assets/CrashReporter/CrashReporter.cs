@@ -112,7 +112,9 @@ public class CrashReporter
 
 	UserInfo m_stUserInfo = new UserInfo();
 
-	ServerInfo m_stServerInfo = new ServerInfo("http://182.162.249.23:38320/sendmail/1");
+//	ServerInfo m_stServerInfo = new ServerInfo("http://182.162.249.23:38320/sendmail/1");
+	ServerInfo m_stServerInfo = new ServerInfo("http://msg-report.pmang.com:38320/sendmail/1");
+
 	public void StartCrashReporter(GameObject go, string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "")
 	{
 

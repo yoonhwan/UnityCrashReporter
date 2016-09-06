@@ -17,8 +17,9 @@ public class NewBehaviourScript : MonoBehaviour {
 	}
 	
 	// Update is called once per frame
+	int testcounter = 0;
 	void Update () {
-	
+		Debug.Log(testcounter++);
 	}
 
 	void Finish()

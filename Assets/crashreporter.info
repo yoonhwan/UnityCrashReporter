@@ -1,0 +1,50 @@
+{
+  "mode": "EWRITESERVER",
+  "ServerInfo": {
+    "host": "http://msg-report.pmang.com:38320/sendmail/1",
+    "SmtpList": [
+      {
+        "id": "",
+        "pwd": "",
+        "smtp" : "mailneo.ds.neowiz.com",
+        "ssl" : false
+      },
+      {
+        "id": "",
+        "pwd": "",
+        "smtp" : "jderms1.pmang.com",
+        "ssl" : false
+      }
+    ]
+  },
+  "GmailList": [
+    {
+      "id": "queens9tft@gmail.com",
+      "pwd": "67y2Nb6JhBBSqdmf4XbT7A=="
+    },
+    {
+      "id": "yoonhwan.ko@gmail.com",
+      "pwd": "U+VKgwhbSxP7bsZ4oo9OXg=="
+    },
+    {
+      "id": "rlarlejrb1@gmail.com",
+      "pwd": "lnMca6MUPYWuFNimW8HXNA=="
+    },
+    {
+      "id": "rlarlejrb2@gmail.com",
+      "pwd": "lnMca6MUPYWuFNimW8HXNA=="
+    },
+    {
+      "id": "rlarlejrb3@gmail.com",
+      "pwd": "lnMca6MUPYWuFNimW8HXNA=="
+    },
+    {
+      "id": "rlarlejrb4@gmail.com",
+      "pwd": "lnMca6MUPYWuFNimW8HXNA=="
+    },
+    {
+      "id": "rlarlejrb5@gmail.com",
+      "pwd": "lnMca6MUPYWuFNimW8HXNA=="
+    }
+  ]
+}
