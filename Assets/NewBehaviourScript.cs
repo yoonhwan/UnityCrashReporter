@@ -6,6 +6,8 @@ public class NewBehaviourScript : MonoBehaviour {
 	public CrashReporter m_cCrashReporter;
 	// Use this for initialization
 	void Start () {
+
+		Debug.Log("Crash Repoter Sample Start");
 		m_cCrashReporter.StartCrashReporter (this.gameObject, 
 		                                     projectname: "CrashReporter Test",
 		                                     type: eCrashWriteType.EWRITEMAIL,
@@ -17,13 +19,13 @@ public class NewBehaviourScript : MonoBehaviour {
 	}
 	
 	// Update is called once per frame
-	int testcounter = 0;
 	void Update () {
-		Debug.Log(testcounter++);
+	
 	}
 
 	void Finish()
 	{
+		Debug.Log("Crash Repoter Sample Finish");
 		m_cCrashReporter.Finish ();
 	}
 

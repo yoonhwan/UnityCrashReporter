@@ -320,8 +320,13 @@ public class CrashReporter
 
 		yield return new WaitForSeconds (1);
 
-		FileInfo info = new FileInfo (GetScreenShotFullPath());
-		UnityEngine.Debug.Log ("ScreenShot " + info.ToString () + " size : " + info.Length);
+		try {
+			FileInfo info = new FileInfo (GetScreenShotFullPath());
+			UnityEngine.Debug.Log ("ScreenShot " + info.ToString () + " size : " + info.Length);	
+		} catch (Exception ex) {
+			
+		}
+
 	}
 
 	string GetFirstFunctionName(string trace)
