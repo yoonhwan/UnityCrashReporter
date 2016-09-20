@@ -323,7 +323,7 @@ public class CrashReporter
 		try {
 			FileInfo info = new FileInfo (GetScreenShotFullPath());
 			UnityEngine.Debug.Log ("ScreenShot " + info.ToString () + " size : " + info.Length);	
-		} catch (Exception ex) {
+		} catch {
 			
 		}
 
