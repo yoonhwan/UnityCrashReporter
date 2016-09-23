@@ -133,7 +133,7 @@ public class CrashReporter
 		
 		m_bCrashCatched = false;
 		UnityEngine.Debug.Log ("CrashReporter Start!!! Mode:" + m_eWriteMode.ToString());
-#if USE_OLD_UNITY_REPORTER
+#if !UNITY_5
 		Application.RegisterLogCallback (HandleException);
 		Application.RegisterLogCallbackThreaded (HandleExceptionThread);
 #else
@@ -632,9 +632,12 @@ public class CrashReporter
 			yield return new WaitForSeconds(1);
 
 			//be sure no body else take control of log 
-#if USE_OLD_UNITY_REPORTER
+#if !UNITY_5
 			Application.RegisterLogCallback (HandleException);
 			Application.RegisterLogCallbackThreaded (HandleExceptionThread);
+#else
+			Application.logMessageReceived += HandleException ;
+			Application.logMessageReceivedThreaded += HandleExceptionThread ;
 #endif
 
 			if( m_listLogBufferThread.Count > 0 )
