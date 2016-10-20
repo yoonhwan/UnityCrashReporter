@@ -16,7 +16,7 @@ public class NewBehaviourScript : MonoBehaviour {
 		                                     gmailPWD: "",
 		                                     mailingList: "",
 											level: eExceptionType.None);
-		m_cCrashReporter.SetCrashReporterOnlineInfo("http://msg.devmdl.pmang.com/Unity5/ConfigClient/crashreporter.info");
+		m_cCrashReporter.SetCrashReporterOnlineInfo("");
 		m_cCrashReporter.SendUnreportedCrashReport();
 	}
 	
