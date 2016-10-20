@@ -14,8 +14,10 @@ public class NewBehaviourScript : MonoBehaviour {
 		                                     clientVersion: "1.0.0",
 		                                     gmailID: "",
 		                                     gmailPWD: "",
-		                                     mailingList: "yoonhwan.ko@neowiz.com;yoonhwan.ko@gmail.com");
-		m_cCrashReporter.SetCrashReporterOnlineInfo("http://msg.devmdl.pmang.com/ConfigClient/crashreporter.info");
+		                                     mailingList: "",
+											level: eExceptionType.None);
+		m_cCrashReporter.SetCrashReporterOnlineInfo("http://msg.devmdl.pmang.com/Unity5/ConfigClient/crashreporter.info");
+		m_cCrashReporter.SendUnreportedCrashReport();
 	}
 	
 	// Update is called once per frame

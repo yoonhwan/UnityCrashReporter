@@ -44,6 +44,7 @@ public class CrashReporter
 	public string m_strBuild_version = "1.0";
 	public string m_strProjectName;
 	public string m_strMailingList;
+	public bool m_bUpdateWaitServerInfo = false;
 
 	StreamWriter m_swWriter;
 	int m_iExceptionCount = 0;
@@ -215,7 +216,7 @@ public class CrashReporter
 		return senders;
 	}
 
-	IEnumerator SendDebugToServer (LogType type, string trace)
+	IEnumerator SendDebugToServer (LogType type, string trace, string body = "")
 	{
 
 		if (m_bCrashCatched != true) {
@@ -229,14 +230,15 @@ public class CrashReporter
 
 			Hashtable data = new Hashtable();
 			data["subject"] = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
-			data["text"] = MakeMassageHeader(BufferToText());
+			data["text"] = body.Length>0? body : MakeMassageHeader(BufferToText());
 			data["reciver"] = mailList;
 			data["from"] = "no-reply";
 			data["sender"] = GetSenderList();
 
 			Debug.Log(SG.MiniJsonExtensions.toJson(GetSenderList()));
 
-			WriteFileLog(data["text"].ToString());
+			if(body.Length <= 0)
+				WriteFileLog(data["text"].ToString(), trace, type == LogType.Exception);
 
 			ScreenShotRoutine((attachmentPath)=>{
 
@@ -282,7 +284,7 @@ public class CrashReporter
 
 		ScreenShotRoutine((attachmentPath)=>{
 
-			WriteFileLog(BufferToText());
+			WriteFileLog(BufferToText(), trace, type == LogType.Exception);
 			FinalWorking ();
 		});
 		yield return null;
@@ -368,7 +370,7 @@ public class CrashReporter
 		return function;
 	}
 
-	IEnumerator SendDebugToMail(LogType type, string trace, string gmailID = "", string gmailPwd = "")
+	IEnumerator SendDebugToMail(LogType type, string trace, string gmailID = "", string gmailPwd = "", string body = "")
 	{
 		if (m_bCrashCatched != true) {
 			m_bCrashCatched = true;
@@ -394,12 +396,13 @@ public class CrashReporter
 
 			mail.Subject = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
 
-			mail.Body = MakeMassageHeader(BufferToText());
+			mail.Body = body.Length > 0 ? body : MakeMassageHeader(BufferToText());
 
 
 			ScreenShotRoutine( (attachmentPath)=>{
 
-				WriteFileLog(mail.Body);
+				if(body.Length <= 0)
+					WriteFileLog(mail.Body, trace, type == LogType.Exception);
 				try {
 					if(File.Exists(attachmentPath))
 					{
@@ -512,32 +515,6 @@ public class CrashReporter
 			m_iExceptionCount++;
 			m_tExceptionType = type;
 		}
-	}
-
-	public void FinalWorking()
-	{
-
-		m_listLogBuffer.Clear();
-		m_listLogBufferThread.Clear();
-		System.GC.Collect();
-
-		if (!Application.isEditor) {
-			SomethingReallyBadHappened ();
-		}
-
-		if(m_tExceptionType == LogType.Exception)
-		{
-			#if UNITY_EDITOR
-			UnityEngine.Debug.Log("<color=yellow>Assert&Exception Occured, See the console log</color>");
-			// 에디터 콘솔창에 'Error Pause' 토글 버튼이 있기 때문에 강제로 Pause 할 필요는 없다고 판단함[blueasa / 2016-02-19]
-			#else
-			UnityEngine.Debug.Log("Assert&Exception Occured");
-
-			Application.Quit();
-			#endif
-		}
-
-		m_tExceptionType = LogType.Log;
 	}
 
 	string BufferToText()
@@ -724,10 +701,10 @@ public class CrashReporter
 
 	public void AnalyticsImplement(LogType type, string trace)
 	{
-		AnalyticsTracker.Instance.SendEvent("Exception", GetFirstFunctionName(trace),
-			new Dictionary<string, object>{
-				{"trace", trace}
-			});
+//		AnalyticsTracker.Instance.SendEvent("Exception", GetFirstFunctionName(trace),
+//			new Dictionary<string, object>{
+//				{"trace", trace}
+//			});
 	}
 
 	void Routine(IEnumerator pRoutine, Action pAction = null)
@@ -744,61 +721,64 @@ public class CrashReporter
 
 	public void SetCrashReporterOnlineInfo(string strConfigFileHost)
 	{
-		#if !UNITY_EDITOR
+#if !UNITY_EDITOR
 
+		m_bUpdateWaitServerInfo = true;
 		Routine(WaitForRequest(new WWW(strConfigFileHost + "?" + Time.time), (msg)=>{
-		string json = msg;
-		Hashtable table = SG.MiniJsonExtensions.hashtableFromJson(json);
+			string json = msg;
+			Hashtable table = SG.MiniJsonExtensions.hashtableFromJson(json);
 
-		try {
-		m_eWriteMode = (eCrashWriteType)System.Enum.Parse(typeof(eCrashWriteType), table["mode"].ToString());	
-		m_strMailingList = table["MailingList"].ToString();
+			try {
+				m_eWriteMode = (eCrashWriteType)System.Enum.Parse(typeof(eCrashWriteType), table["mode"].ToString());	
+				m_strMailingList = table["MailingList"].ToString();
 
-		try {
-		m_tCrashReporterLevel = eExceptionType.None;
-		ArrayList arr = (ArrayList)table["CrashReporterLevel"];
-		foreach (string item in arr) {
-		m_tCrashReporterLevel |= (eExceptionType)Enum.Parse(typeof(eExceptionType), item);
-		}
-		} catch {
-		m_tCrashReporterLevel = eExceptionType.Exception;
-		}
+				try {
+					m_tCrashReporterLevel = eExceptionType.None;
+					ArrayList arr = (ArrayList)table["CrashReporterLevel"];
+					foreach (string item in arr) {
+						m_tCrashReporterLevel |= (eExceptionType)Enum.Parse(typeof(eExceptionType), item);
+					}
+				} catch {
+					m_tCrashReporterLevel = eExceptionType.Exception;
+				}
 
-		if(m_eWriteMode == eCrashWriteType.EWRITEMAIL)
-		{
-		ArrayList list = (ArrayList)table["GmailList"];
-		foreach (Hashtable item in list) {
+				if(m_eWriteMode == eCrashWriteType.EWRITEMAIL)
+				{
+					ArrayList list = (ArrayList)table["GmailList"];
+					foreach (Hashtable item in list) {
 
-		m_stServerInfo.SetServerHost("");
-		m_stServerInfo.AddSmtp(new SmtpMailInfo(item["id"].ToString(),item["pwd"].ToString(), "smtp.gmail.com", true));
-		}
+						m_stServerInfo.SetServerHost("");
+						m_stServerInfo.AddSmtp(new SmtpMailInfo(item["id"].ToString(),item["pwd"].ToString(), "smtp.gmail.com", true));
+					}
 
-		}else if (m_eWriteMode == eCrashWriteType.EWRITESERVER)
-		{
-		//					m_stServerInfo.GetCurrentSmtp().userID
+				}else if (m_eWriteMode == eCrashWriteType.EWRITESERVER)
+				{
+					//					m_stServerInfo.GetCurrentSmtp().userID
 
-		m_stServerInfo.ClearSmtpList();
-		m_stServerInfo.ResetSmtpIndex();
+					m_stServerInfo.ClearSmtpList();
+					m_stServerInfo.ResetSmtpIndex();
 
-		Hashtable hash = (Hashtable)table["ServerInfo"];
-		m_stServerInfo.SetServerHost(hash["host"].ToString());
+					Hashtable hash = (Hashtable)table["ServerInfo"];
+					m_stServerInfo.SetServerHost(hash["host"].ToString());
 
-		ArrayList list = (ArrayList)hash["SmtpList"];
-		foreach (Hashtable item in list) {
-		m_stServerInfo.AddSmtp(new SmtpMailInfo(item["id"].ToString(),item["pwd"].ToString(), item["smtp"].ToString(), (bool)item["ssl"]));
-		}
-		}
+					ArrayList list = (ArrayList)hash["SmtpList"];
+					foreach (Hashtable item in list) {
+						m_stServerInfo.AddSmtp(new SmtpMailInfo(item["id"].ToString(),item["pwd"].ToString(), item["smtp"].ToString(), (bool)item["ssl"]));
+					}
+				}
 
-		} catch (Exception ex) {
-		m_eWriteMode = eCrashWriteType.EWRITEGAv3;
-		}
+			} catch (Exception ex) {
+				m_eWriteMode = eCrashWriteType.EWRITEGAv3;
+			}
 
-		UnityEngine.Debug.Log ("CrashReporter Change Mode:" + m_eWriteMode.ToString());
+			m_bUpdateWaitServerInfo = false;
+			UnityEngine.Debug.Log ("CrashReporter Change Mode:" + m_eWriteMode.ToString());
 		}, ()=>{
-		m_eWriteMode = eCrashWriteType.EWRITEGAv3;
+			m_eWriteMode = eCrashWriteType.EWRITEGAv3;
+			m_bUpdateWaitServerInfo = false;
 		}));
 
-		#endif
+#endif
 	}
 	IEnumerator WaitForRequest(WWW www, Action<string> success, Action fail)
 	{
@@ -823,16 +803,104 @@ public class CrashReporter
 		}  
 	}
 
-	void WriteFileLog(string message)	
+	void WriteFileLog(string message, string trace, bool bException)	
 	{
-		#if UNITY_ANDROID || UNITY_IPHONE
+#if UNITY_ANDROID || UNITY_IPHONE
 		m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "unityexceptions.txt"));
-		#else
+#else
 		m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "unityexceptions.txt"));
-		#endif
+#endif
 		m_swWriter.AutoFlush = true;
 
 		m_swWriter.WriteLine(message);
 		m_swWriter.Close();
+
+		if(bException)
+		{
+#if UNITY_ANDROID || UNITY_IPHONE
+			m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "exceptiontrace.txt"));
+#else
+			m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "exceptiontrace.txt"));
+#endif
+			m_swWriter.AutoFlush = true;
+
+			m_swWriter.WriteLine(message);
+			m_swWriter.Close();
+		}
 	}
+
+	public void SendUnreportedCrashReport()
+	{
+		Routine(WaitServerInfoRefresh());
+
+	}
+
+	IEnumerator WaitServerInfoRefresh()
+	{
+		while(m_bUpdateWaitServerInfo==true)	{
+			yield return null;
+		}
+		if(m_eWriteMode == eCrashWriteType.EWRITEMAIL
+			|| m_eWriteMode == eCrashWriteType.EWRITESERVER)
+		{
+			string stackPath = "";
+			string bodyPath = "";
+#if UNITY_ANDROID || UNITY_IPHONE
+			stackPath = Path.Combine(Application.persistentDataPath, "exceptiontrace.txt");
+			bodyPath = Path.Combine(Application.persistentDataPath, "unityexceptions.txt");
+#else
+			stackPath = Path.Combine(Application.dataPath, "exceptiontrace.txt");
+			bodyPath = Path.Combine(Application.dataPath, "unityexceptions.txt");
+#endif
+			if(File.Exists(stackPath) && File.Exists(bodyPath))
+			{
+				switch(m_eWriteMode)
+				{
+				case eCrashWriteType.EWRITESERVER:
+					Routine(SendDebugToServer(LogType.Exception, File.ReadAllText(stackPath), File.ReadAllText(bodyPath)));
+					break;
+				case eCrashWriteType.EWRITEMAIL:
+					Routine(SendDebugToMail(LogType.Exception, File.ReadAllText(stackPath), m_stServerInfo.GetCurrentSmtp().userID, m_stServerInfo.GetCurrentSmtp().userPwd, File.ReadAllText(bodyPath)));
+					break;
+				}
+			}
+		}
+	}
+	public void FinalWorking()
+	{
+
+		m_listLogBuffer.Clear();
+		m_listLogBufferThread.Clear();
+		System.GC.Collect();
+
+		if (!Application.isEditor) {
+			SomethingReallyBadHappened ();
+		}
+
+		string path = "";
+#if UNITY_ANDROID || UNITY_IPHONE
+		path = Path.Combine(Application.persistentDataPath, "exceptiontrace.txt");
+#else
+		path = Path.Combine(Application.dataPath, "exceptiontrace.txt");
+#endif
+		if(File.Exists(path))
+			File.Delete(path);
+
+		Debug.Log("FinalWork finish crashreporter");
+
+		if(m_tExceptionType == LogType.Exception)
+		{
+#if UNITY_EDITOR
+			UnityEngine.Debug.Log("<color=yellow>Assert&Exception Occured, See the console log</color>");
+			// 에디터 콘솔창에 'Error Pause' 토글 버튼이 있기 때문에 강제로 Pause 할 필요는 없다고 판단함[blueasa / 2016-02-19]
+#else
+			UnityEngine.Debug.Log("Assert&Exception Occured");
+			Application.Quit();
+#endif
+		}
+
+		m_bCrashCatched = false;
+		m_tExceptionType = LogType.Log;
+	}
+
 }
