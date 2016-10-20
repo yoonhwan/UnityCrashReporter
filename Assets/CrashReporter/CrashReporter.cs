@@ -216,7 +216,7 @@ public class CrashReporter
 		return senders;
 	}
 
-	IEnumerator SendDebugToServer (LogType type, string trace, string body = "")
+	IEnumerator SendDebugToServer (LogType type, string trace, string unreportedMessageBody = "")
 	{
 
 		if (m_bCrashCatched != true) {
@@ -230,14 +230,14 @@ public class CrashReporter
 
 			Hashtable data = new Hashtable();
 			data["subject"] = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
-			data["text"] = body.Length>0? body : MakeMassageHeader(BufferToText());
+			data["text"] = unreportedMessageBody.Length>0? unreportedMessageBody : MakeMassageHeader(BufferToText());
 			data["reciver"] = mailList;
-			data["from"] = "no-reply";
+			data["from"] = "no-replay";
 			data["sender"] = GetSenderList();
 
 			Debug.Log(SG.MiniJsonExtensions.toJson(GetSenderList()));
 
-			if(body.Length <= 0)
+			if(unreportedMessageBody.Length <= 0)
 				WriteFileLog(data["text"].ToString(), trace, type == LogType.Exception);
 
 			ScreenShotRoutine((attachmentPath)=>{
@@ -267,10 +267,10 @@ public class CrashReporter
 				#endif
 				Routine(WaitForRequest(www,(msg)=>{
 					Debug.Log(msg);
-					FinalWorking ();
+					FinalWorking (unreportedMessageBody.Length > 0);
 				},()=>{
 					Debug.Log("fail");
-					FinalWorking ();
+					FinalWorking (unreportedMessageBody.Length > 0);
 				}));
 			});
 		}
@@ -370,7 +370,7 @@ public class CrashReporter
 		return function;
 	}
 
-	IEnumerator SendDebugToMail(LogType type, string trace, string gmailID = "", string gmailPwd = "", string body = "")
+	IEnumerator SendDebugToMail(LogType type, string trace, string gmailID = "", string gmailPwd = "", string unreportedMessageBody = "")
 	{
 		if (m_bCrashCatched != true) {
 			m_bCrashCatched = true;
@@ -396,12 +396,12 @@ public class CrashReporter
 
 			mail.Subject = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
 
-			mail.Body = body.Length > 0 ? body : MakeMassageHeader(BufferToText());
+			mail.Body = unreportedMessageBody.Length > 0 ? unreportedMessageBody : MakeMassageHeader(BufferToText());
 
 
 			ScreenShotRoutine( (attachmentPath)=>{
 
-				if(body.Length <= 0)
+				if(unreportedMessageBody.Length <= 0)
 					WriteFileLog(mail.Body, trace, type == LogType.Exception);
 				try {
 					if(File.Exists(attachmentPath))
@@ -434,7 +434,7 @@ public class CrashReporter
 					smtpServer.Send(mail);
 					UnityEngine.Debug.Log("send finish");
 
-					FinalWorking();
+					FinalWorking(unreportedMessageBody.Length > 0);
 
 				} catch (Exception ex) {
 					Debug.Log ("Can't send crashreporter mail, smtp sending error : " + ex.Message);
@@ -866,9 +866,8 @@ public class CrashReporter
 			}
 		}
 	}
-	public void FinalWorking()
+	public void FinalWorking(bool bUnreportedCrashWork = false)
 	{
-
 		m_listLogBuffer.Clear();
 		m_listLogBufferThread.Clear();
 		System.GC.Collect();
@@ -888,7 +887,7 @@ public class CrashReporter
 
 		Debug.Log("FinalWork finish crashreporter");
 
-		if(m_tExceptionType == LogType.Exception)
+		if(bUnreportedCrashWork==false && m_tExceptionType == LogType.Exception)
 		{
 #if UNITY_EDITOR
 			UnityEngine.Debug.Log("<color=yellow>Assert&Exception Occured, See the console log</color>");
