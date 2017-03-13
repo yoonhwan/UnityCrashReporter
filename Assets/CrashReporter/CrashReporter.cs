@@ -1,11 +1,11 @@
 // before unity 5.0
 #define USE_OLD_UNITY_REPORTER
 
+using UnityEngine;
 using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Net;
 using System.Net.Mail;    
 using System.Net.Mime; 
@@ -232,7 +232,7 @@ public class CrashReporter
 			data["subject"] = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
 			data["text"] = unreportedMessageBody.Length>0? unreportedMessageBody : MakeMassageHeader(BufferToText());
 			data["reciver"] = mailList;
-			data["from"] = "no-replay";
+			data["from"] = "no-reply";
 			data["sender"] = GetSenderList();
 
 			Debug.Log(SG.MiniJsonExtensions.toJson(GetSenderList()));
@@ -330,7 +330,7 @@ public class CrashReporter
 	{
 		UnityEngine.Debug.Log ("ScreenShot " );
 
-		Application.CaptureScreenshot (GetScreenShotName());
+		TakeScreenShot(GetScreenShotFullPath());
 
 		yield return new WaitForSeconds (1);
 
@@ -340,6 +340,31 @@ public class CrashReporter
 		} catch {
 
 		}
+	}
+
+	void TakeScreenShot(string _path)
+	{
+		RenderTexture rt = new RenderTexture(Screen.width, Screen.height, 24);
+		Texture2D screenShot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+
+		//Render from all!
+		foreach (Camera cam in Camera.allCameras)
+		{
+			cam.targetTexture = rt;
+			cam.Render();
+			cam.targetTexture = null;
+		}
+
+		RenderTexture.active = rt;
+		screenShot.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+		RenderTexture.active = null; //Added to avoid errors
+		GameObject.Destroy(rt);
+		//Convert to png(Expensive)
+		byte[] imageBytes = screenShot.EncodeToJPG();
+
+		File.WriteAllBytes(_path, imageBytes);
+
+		Debug.Log(string.Format("Took screenshot to: {0}", _path));
 	}
 
 	string GetFirstFunctionName(string trace)
