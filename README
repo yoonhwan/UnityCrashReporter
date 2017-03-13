@@ -1,3 +1,5 @@
+# test
+
 //start crashreport
 inst.StartCrashReporter (this.gameObject, 
                          projectname: "CrashReporter Test",
