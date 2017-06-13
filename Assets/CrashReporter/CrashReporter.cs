@@ -51,10 +51,11 @@ public class CrashReporter
 	eExceptionType	m_tCrashReporterLevel = eExceptionType.Error | eExceptionType.Exception;
 	LogType m_tExceptionType = LogType.Log;
 	int m_iMaxLogCount = 30;
-	class LogStruct	{
+	public class LogStruct	{
 		public LogType type;
 		public string buffer;
 		public string stacktrace;
+		public string condition;
 	};
 
 	class UserInfo	{
@@ -141,7 +142,6 @@ public class CrashReporter
 
 		if (go.GetComponent<MonoBehaviour> () == null) {
 			throw new Exception ("monobehaviour object not set : for use coroutine works");
-			return;
 		}
 
 		m_bCrashCatched = false;
@@ -216,20 +216,19 @@ public class CrashReporter
 		return senders;
 	}
 
-	IEnumerator SendDebugToServer (LogType type, string trace, string unreportedMessageBody = "")
+	IEnumerator SendDebugToServer (LogStruct lastexception, string unreportedMessageBody = "")
 	{
 
 		if (m_bCrashCatched != true) {
 			m_bCrashCatched = true;
-			string function = trace;
-			AnalyticsImplement(type,trace);
+			AnalyticsImplement(lastexception);
 
 			UnityEngine.Debug.Log ("SendDebugToServer " );
 
 			string mailList = GetMailingList();
 
 			Hashtable data = new Hashtable();
-			data["subject"] = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
+			data["subject"] = "["+ m_strProjectName + " CrashReport - " + lastexception.type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
 			data["text"] = unreportedMessageBody.Length>0? unreportedMessageBody : MakeMassageHeader(BufferToText());
 			data["reciver"] = mailList;
 			data["from"] = "no-reply";
@@ -238,7 +237,7 @@ public class CrashReporter
 			Debug.Log(SG.MiniJsonExtensions.toJson(GetSenderList()));
 
 			if(unreportedMessageBody.Length <= 0)
-				WriteFileLog(data["text"].ToString(), trace, type == LogType.Exception);
+				WriteFileLog(data["text"].ToString(), lastexception.stacktrace, lastexception.type == LogType.Exception);
 
 			ScreenShotRoutine((attachmentPath)=>{
 
@@ -278,13 +277,13 @@ public class CrashReporter
 	}
 
 
-	IEnumerator SendDebugToFile (LogType type, string trace)
+	IEnumerator SendDebugToFile (LogStruct lastexception)
 	{
 		Debug.Log ("SendDebugToFile");
 
 		ScreenShotRoutine((attachmentPath)=>{
 
-			WriteFileLog(BufferToText(), trace, type == LogType.Exception);
+			WriteFileLog(BufferToText(), lastexception.stacktrace, lastexception.type==LogType.Exception);
 			FinalWorking ();
 		});
 		yield return null;
@@ -367,14 +366,17 @@ public class CrashReporter
 		Debug.Log(string.Format("Took screenshot to: {0}", _path));
 	}
 
-	string GetFirstFunctionName(string trace)
+	string GetFirstFunctionName(LogStruct lastexception)
 	{
-		string function = "[Exception] ";
-		if (trace.IndexOf (" (") != -1) {
+		string function = "["+lastexception.type.ToString()+"] ";
+		if(lastexception.condition.Contains("Exception"))
+			function = "[" + lastexception.condition.Replace(" ","").Split(':')[0] + "] ";
 
-			bool isAssert = trace.Contains("SGUtil.Assert")==true?true:false;
+		if (lastexception.stacktrace.IndexOf (" (") != -1) {
 
-			string[] line = trace.Split('\n');
+			bool isAssert = lastexception.stacktrace.Contains("SGUtil.Assert")==true?true:false;
+
+			string[] line = lastexception.stacktrace.Split('\n');
 			for (int i = 0; i < line.Length; i++) {
 				string lineString = line[i];
 				UnityEngine.Debug.Log("Line : " + lineString);
@@ -395,12 +397,11 @@ public class CrashReporter
 		return function;
 	}
 
-	IEnumerator SendDebugToMail(LogType type, string trace, string gmailID = "", string gmailPwd = "", string unreportedMessageBody = "")
+	IEnumerator SendDebugToMail(LogStruct lastexception, string gmailID = "", string gmailPwd = "", string unreportedMessageBody = "")
 	{
 		if (m_bCrashCatched != true) {
 			m_bCrashCatched = true;
-			string function = trace;
-			AnalyticsImplement(type,trace);
+			AnalyticsImplement(lastexception);
 
 			UnityEngine.Debug.Log ("SendDebugToMail " );
 			MailMessage mail = new MailMessage ();
@@ -419,7 +420,7 @@ public class CrashReporter
 				yield return null;
 			}
 
-			mail.Subject = "["+ m_strProjectName + " CrashReport - " + type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
+			mail.Subject = "["+ m_strProjectName + " CrashReport - " + lastexception.type.ToString() + " #" + m_strBuild_version.ToString() + " ] " + m_stUserInfo.teamname + " #" + DateTime.Now;
 
 			mail.Body = unreportedMessageBody.Length > 0 ? unreportedMessageBody : MakeMassageHeader(BufferToText());
 
@@ -427,7 +428,7 @@ public class CrashReporter
 			ScreenShotRoutine( (attachmentPath)=>{
 
 				if(unreportedMessageBody.Length <= 0)
-					WriteFileLog(mail.Body, trace, type == LogType.Exception);
+					WriteFileLog(mail.Body, lastexception.stacktrace, lastexception.type == LogType.Exception);
 				try {
 					if(File.Exists(attachmentPath))
 					{
@@ -469,7 +470,7 @@ public class CrashReporter
 					{
 						m_stServerInfo.SetNextSmtp();
 						m_bCrashCatched = false;
-						Routine(SendDebugToMail(type, trace, info.userID, info.userPwd));
+						Routine(SendDebugToMail(lastexception, info.userID, info.userPwd));
 					}
 				}
 			});
@@ -478,16 +479,15 @@ public class CrashReporter
 		yield return null;
 	}
 
-	void SendDebugToGoogleAnalytics(LogType type, string trace)
+	void SendDebugToGoogleAnalytics(LogStruct lastexception)
 	{
 		if (m_bCrashCatched != true) {
 			m_bCrashCatched = true;
 
 			UnityEngine.Debug.Log("send crash report to google");
-			string function = trace;
-			AnalyticsImplement(type,trace);
+			AnalyticsImplement(lastexception);
 
-			Routine(SendDebugToFile(type, trace));
+			Routine(SendDebugToFile(lastexception));
 		}
 	}
 
@@ -503,7 +503,7 @@ public class CrashReporter
 		string sep = "------------------------------------------------------------------------------\r\n";
 
 		LogStruct st = new LogStruct{type=type,buffer=sep + "Type : " + type.ToString () + "\r\nTime : " + Time.realtimeSinceStartup.ToString () + "\r\nCondition : " + condition,
-			stacktrace=stackTrace};
+			stacktrace=stackTrace, condition=condition};
 		m_listLogBuffer.Add (st);
 
 		ResetBufferToLimit ();
@@ -533,7 +533,7 @@ public class CrashReporter
 		string sep = "------------------------------------------------------------------------------\r\n";
 
 		LogStruct st = new LogStruct{type=type,buffer=sep + "Type : " + type.ToString () + " Time : " + Time.realtimeSinceStartup.ToString () + "\r\n Condition : " + condition,
-			stacktrace=stackTrace};
+			stacktrace=stackTrace, condition=condition};
 		AddThreadBuffer (st);
 		if(((int)m_tCrashReporterLevel & (int)Enum.Parse(typeof(eExceptionType), type.ToString())) != 0)
 		{
@@ -696,18 +696,18 @@ public class CrashReporter
 				{
 				case eCrashWriteType.EWRITEFILE:
 					{
-						Routine(SendDebugToFile(lastExceptionLog.type, lastExceptionLog.stacktrace));
+						Routine(SendDebugToFile(lastExceptionLog));
 					}
 					break;
 				case eCrashWriteType.EWRITESERVER:
-					Routine(SendDebugToServer(lastExceptionLog.type, lastExceptionLog.stacktrace));
+					Routine(SendDebugToServer(lastExceptionLog));
 					break;
 				case eCrashWriteType.EWRITEMAIL:
 
-					Routine(SendDebugToMail(lastExceptionLog.type, lastExceptionLog.stacktrace, m_stServerInfo.GetCurrentSmtp().userID, m_stServerInfo.GetCurrentSmtp().userPwd));
+					Routine(SendDebugToMail(lastExceptionLog, m_stServerInfo.GetCurrentSmtp().userID, m_stServerInfo.GetCurrentSmtp().userPwd));
 					break;
 				case eCrashWriteType.EWRITEGAv3:
-					SendDebugToGoogleAnalytics(lastExceptionLog.type, lastExceptionLog.stacktrace);
+					SendDebugToGoogleAnalytics(lastExceptionLog);
 					break;
 				}
 
@@ -724,11 +724,12 @@ public class CrashReporter
 		m_stUserInfo.teamname = teamname;
 	}
 
-	public void AnalyticsImplement(LogType type, string trace)
+	public void AnalyticsImplement(LogStruct lastexception)
 	{
-//		AnalyticsTracker.Instance.SendEvent("Exception", GetFirstFunctionName(trace),
+//		AnalyticsTracker.Instance.SendEvent("Exception", GetFirstFunctionName(lastexception),
 //			new Dictionary<string, object>{
-//				{"trace", trace}
+//				{"condition", lastexception.condition},
+//				{"trace", lastexception.stacktrace}
 //			});
 	}
 
@@ -830,11 +831,11 @@ public class CrashReporter
 
 	void WriteFileLog(string message, string trace, bool bException)	
 	{
-#if UNITY_ANDROID || UNITY_IPHONE
+		#if UNITY_ANDROID || UNITY_IPHONE
 		m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "unityexceptions.txt"));
-#else
+		#else
 		m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "unityexceptions.txt"));
-#endif
+		#endif
 		m_swWriter.AutoFlush = true;
 
 		m_swWriter.WriteLine(message);
@@ -842,11 +843,11 @@ public class CrashReporter
 
 		if(bException)
 		{
-#if UNITY_ANDROID || UNITY_IPHONE
+			#if UNITY_ANDROID || UNITY_IPHONE
 			m_swWriter = new StreamWriter(Path.Combine(Application.persistentDataPath, "exceptiontrace.txt"));
-#else
+			#else
 			m_swWriter = new StreamWriter(Path.Combine(Application.dataPath, "exceptiontrace.txt"));
-#endif
+			#endif
 			m_swWriter.AutoFlush = true;
 
 			m_swWriter.WriteLine(message);
@@ -870,22 +871,26 @@ public class CrashReporter
 		{
 			string stackPath = "";
 			string bodyPath = "";
-#if UNITY_ANDROID || UNITY_IPHONE
+			#if UNITY_ANDROID || UNITY_IPHONE
 			stackPath = Path.Combine(Application.persistentDataPath, "exceptiontrace.txt");
 			bodyPath = Path.Combine(Application.persistentDataPath, "unityexceptions.txt");
-#else
+			#else
 			stackPath = Path.Combine(Application.dataPath, "exceptiontrace.txt");
 			bodyPath = Path.Combine(Application.dataPath, "unityexceptions.txt");
-#endif
+			#endif
+
 			if(File.Exists(stackPath) && File.Exists(bodyPath))
 			{
+				LogStruct st = new LogStruct{type=LogType.Exception,buffer=File.ReadAllText(bodyPath),
+					stacktrace=File.ReadAllText(stackPath), condition=""};
+
 				switch(m_eWriteMode)
 				{
 				case eCrashWriteType.EWRITESERVER:
-					Routine(SendDebugToServer(LogType.Exception, File.ReadAllText(stackPath), File.ReadAllText(bodyPath)));
+					Routine(SendDebugToServer(st, File.ReadAllText(bodyPath)));
 					break;
 				case eCrashWriteType.EWRITEMAIL:
-					Routine(SendDebugToMail(LogType.Exception, File.ReadAllText(stackPath), m_stServerInfo.GetCurrentSmtp().userID, m_stServerInfo.GetCurrentSmtp().userPwd, File.ReadAllText(bodyPath)));
+					Routine(SendDebugToMail(st, m_stServerInfo.GetCurrentSmtp().userID, m_stServerInfo.GetCurrentSmtp().userPwd, File.ReadAllText(bodyPath)));
 					break;
 				}
 			}
@@ -902,11 +907,11 @@ public class CrashReporter
 		}
 
 		string path = "";
-#if UNITY_ANDROID || UNITY_IPHONE
+		#if UNITY_ANDROID || UNITY_IPHONE
 		path = Path.Combine(Application.persistentDataPath, "exceptiontrace.txt");
-#else
+		#else
 		path = Path.Combine(Application.dataPath, "exceptiontrace.txt");
-#endif
+		#endif
 		if(File.Exists(path))
 			File.Delete(path);
 
@@ -914,13 +919,13 @@ public class CrashReporter
 
 		if(bUnreportedCrashWork==false && m_tExceptionType == LogType.Exception)
 		{
-#if UNITY_EDITOR
+			#if UNITY_EDITOR
 			UnityEngine.Debug.Log("<color=yellow>Assert&Exception Occured, See the console log</color>");
 			// 에디터 콘솔창에 'Error Pause' 토글 버튼이 있기 때문에 강제로 Pause 할 필요는 없다고 판단함[blueasa / 2016-02-19]
-#else
+			#else
 			UnityEngine.Debug.Log("Assert&Exception Occured");
 			Application.Quit();
-#endif
+			#endif
 		}
 
 		m_bCrashCatched = false;
