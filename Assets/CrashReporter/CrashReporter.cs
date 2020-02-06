@@ -785,7 +785,7 @@ public class CrashReporter : MonoBehaviour
 
 	public void SetCrashReporterOnlineInfo(string strConfigFileHost)
 	{
-// #if !UNITY_EDITOR
+#if !UNITY_EDITOR
 
 		m_bUpdateWaitServerInfo = true;
 		Routine(WebRequest(strConfigFileHost + "?" + Time.time, null, (msg)=>{
@@ -843,7 +843,7 @@ public class CrashReporter : MonoBehaviour
 			m_bUpdateWaitServerInfo = false;
 		}));
 
-// #endif
+#endif
 	}
 	/* change from www to unitywebrequest
 	IEnumerator WaitForRequest(WWW www, Action<string> success, Action fail)
