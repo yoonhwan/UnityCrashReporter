@@ -1,23 +1,23 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class NewBehaviourScript : MonoBehaviour {
+public class CrashTestScene : MonoBehaviour {
 
 	public CrashReporter m_cCrashReporter;
 	// Use this for initialization
 	void Start () {
 
-		Debug.Log("Crash Repoter Sample Start");
-		m_cCrashReporter.StartCrashReporter (this.gameObject, 
+		m_cCrashReporter = CrashReporter.StartCrashReporter (this.gameObject, 
 		                                     projectname: "CrashReporter Test",
 		                                     type: eCrashWriteType.EWRITEMAIL,
 		                                     clientVersion: "1.0.0",
 		                                     gmailID: "",
 		                                     gmailPWD: "",
 		                                     mailingList: "",
-											level: eExceptionType.None);
+											 level: eExceptionType.Exception);
 		m_cCrashReporter.SetCrashReporterOnlineInfo("");
 		m_cCrashReporter.SendUnreportedCrashReport();
+		Debug.Log("Crash Repoter Sample Start");
 	}
 	
 	// Update is called once per frame

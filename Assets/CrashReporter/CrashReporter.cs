@@ -13,6 +13,8 @@ using System.Net.Security;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography.X509Certificates;
+using UnityEngine.SceneManagement;
+using UnityEngine.Networking;
 
 public enum eCrashWriteType
 {
@@ -35,10 +37,10 @@ public enum eExceptionType
 };
 
 [Serializable]
-public class CrashReporter
+public class CrashReporter : MonoBehaviour
 {
 	static bool m_bCrashCatched = false;
-	public GameObject m_goMonoBehaviourObject;
+
 	public eCrashWriteType m_eWriteMode = eCrashWriteType.EWRITEOFF;
 	public bool m_bScreenShotSupport = true;
 	public string m_strBuild_version = "1.0";
@@ -51,14 +53,14 @@ public class CrashReporter
 	eExceptionType	m_tCrashReporterLevel = eExceptionType.Error | eExceptionType.Exception;
 	LogType m_tExceptionType = LogType.Log;
 	int m_iMaxLogCount = 30;
-	public class LogStruct	{
+	public struct LogStruct	{
 		public LogType type;
 		public string buffer;
 		public string stacktrace;
 		public string condition;
 	};
 
-	class UserInfo	{
+	struct UserInfo	{
 		public string userID;	//membership id
 		public string userUID;	//gameserver game id
 		public string nickname;	//player name
@@ -128,7 +130,21 @@ public class CrashReporter
 	UserInfo m_stUserInfo = new UserInfo();
 
 	ServerInfo m_stServerInfo = new ServerInfo("");
-	public void StartCrashReporter(GameObject go, string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "", eExceptionType level = eExceptionType.Exception)
+
+	public static CrashReporter StartCrashReporter(GameObject go, string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "", eExceptionType level = eExceptionType.Exception)
+	{
+
+		if (go.GetComponent<MonoBehaviour> () == null) {
+			throw new Exception ("monobehaviour object not set : for use coroutine works");
+		}
+
+		if(go.GetComponent<CrashReporter>() != null)
+			Destroy(go.GetComponent<CrashReporter>());
+		
+		return go.AddComponent<CrashReporter>().MakeInitial(projectname, type, clientVersion, gmailID, gmailPWD, mailingList, level);
+	}
+
+	public CrashReporter MakeInitial(string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "", eExceptionType level = eExceptionType.Exception)
 	{
 
 		m_eWriteMode = type;
@@ -138,15 +154,11 @@ public class CrashReporter
 		m_eWriteMode = eCrashWriteType.EWRITEFILE;
 		#endif
 		if (m_eWriteMode == eCrashWriteType.EWRITEOFF)
-			return;
-
-		if (go.GetComponent<MonoBehaviour> () == null) {
-			throw new Exception ("monobehaviour object not set : for use coroutine works");
-		}
+			return null;
 
 		m_bCrashCatched = false;
 		UnityEngine.Debug.Log ("CrashReporter Start!!! Mode:" + m_eWriteMode.ToString());
-		#if !UNITY_5
+		#if !UNITY_5_4_OR_NEWER
 		Application.RegisterLogCallback (HandleException);
 		Application.RegisterLogCallbackThreaded (HandleExceptionThread);
 		#else
@@ -154,7 +166,6 @@ public class CrashReporter
 		Application.logMessageReceivedThreaded += HandleExceptionThread ;
 		#endif
 
-		m_goMonoBehaviourObject = go;
 		if(projectname.Length > 0)
 			m_strProjectName = projectname;
 
@@ -165,6 +176,7 @@ public class CrashReporter
 			m_stServerInfo.AddSmtp(new SmtpMailInfo(gmailID,gmailPWD,"smtp.gmail.com",true));
 		}
 
+		m_strMailingList = "";
 		if (mailingList.Length > 0)
 			m_strMailingList = mailingList;
 
@@ -173,7 +185,10 @@ public class CrashReporter
 		m_stUserInfo.nickname = "";
 		m_stUserInfo.teamname = "";
 
+
 		Routine (UpdateCrashRepoter ());
+
+		return this;
 	}
 
 	public void Finish()
@@ -256,15 +271,17 @@ public class CrashReporter
 
 				string base_data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(SG.MiniJsonExtensions.toJson(data)));
 
-				#if USING_GET
-				WWW www = new WWW (m_strPostURL+"?data="+base_data);
-				#else
-				WWWForm form = new WWWForm();
+				string www = "";
+				WWWForm form = null;
+#if USING_GET
+				www = (m_stServerInfo.host+"?data="+base_data);
+#else
+				form = new WWWForm();
 				form.AddField("data",base_data);
 
-				WWW www = new WWW (m_stServerInfo.host, form);
-				#endif
-				Routine(WaitForRequest(www,(msg)=>{
+				www = m_stServerInfo.host;
+#endif
+				Routine(WebRequest(www, form, (msg)=>{
 					Debug.Log(msg);
 					FinalWorking (unreportedMessageBody.Length > 0);
 				},()=>{
@@ -308,6 +325,9 @@ public class CrashReporter
 				callback(GetScreenShotFullPath());
 			}else
 				callback("");
+
+			// if(File.Exists(GetScreenShotFullPath()))
+			// 	File.Delete(GetScreenShotFullPath());
 		});
 	}
 
@@ -329,7 +349,7 @@ public class CrashReporter
 	{
 		UnityEngine.Debug.Log ("ScreenShot " );
 
-		TakeScreenShot(GetScreenShotFullPath());
+		TakeScreenShot(GetScreenShotName());
 
 		yield return new WaitForSeconds (1);
 
@@ -343,6 +363,7 @@ public class CrashReporter
 
 	void TakeScreenShot(string _path)
 	{
+#if !UNITY_5_4_OR_NEWER
 		RenderTexture rt = new RenderTexture(Screen.width, Screen.height, 24);
 		Texture2D screenShot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
 
@@ -364,6 +385,10 @@ public class CrashReporter
 		File.WriteAllBytes(_path, imageBytes);
 
 		Debug.Log(string.Format("Took screenshot to: {0}", _path));
+#else
+		ScreenCapture.CaptureScreenshot(_path);
+		Debug.Log(string.Format("Took screenshot to: {0}", _path));
+#endif
 	}
 
 	string GetFirstFunctionName(LogStruct lastexception)
@@ -502,9 +527,15 @@ public class CrashReporter
 	{
 		string sep = "------------------------------------------------------------------------------\r\n";
 
-		LogStruct st = new LogStruct{type=type,buffer=sep + "Type : " + type.ToString () + "\r\nTime : " + Time.realtimeSinceStartup.ToString () + "\r\nCondition : " + condition,
-			stacktrace=stackTrace, condition=condition};
-		m_listLogBuffer.Add (st);
+		m_listLogBuffer.Add (
+			    new LogStruct
+			    {
+				    type = type,
+				    buffer = sep + "Type : " + type.ToString() + "\r\nTime : " + Time.realtimeSinceStartup.ToString() + "\r\nCondition : " + condition,
+				    stacktrace = stackTrace,
+				    condition = condition
+			    }
+            );
 
 		ResetBufferToLimit ();
 
@@ -532,9 +563,16 @@ public class CrashReporter
 	{
 		string sep = "------------------------------------------------------------------------------\r\n";
 
-		LogStruct st = new LogStruct{type=type,buffer=sep + "Type : " + type.ToString () + " Time : " + Time.realtimeSinceStartup.ToString () + "\r\n Condition : " + condition,
-			stacktrace=stackTrace, condition=condition};
-		AddThreadBuffer (st);
+		AddThreadBuffer (
+				new LogStruct
+				{
+					type = type,
+					buffer = sep + "Type : " + type.ToString() + " Time : " + Time.realtimeSinceStartup.ToString() + "\r\n Condition : " + condition,
+					stacktrace = stackTrace,
+					condition = condition
+				}
+            );
+
 		if(((int)m_tCrashReporterLevel & (int)Enum.Parse(typeof(eExceptionType), type.ToString())) != 0)
 		{
 			m_iExceptionCount++;
@@ -575,21 +613,21 @@ public class CrashReporter
 
 		UnityEngine.Object[] textures = Resources.FindObjectsOfTypeAll(typeof(Texture));
 		foreach (Texture t in textures)
-			textureSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
+			textureSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong (t);
 		UnityEngine.Object[] meshs = Resources.FindObjectsOfTypeAll(typeof(Mesh));
 		foreach (Mesh t in meshs)
-			meshSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
+			meshSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(t);
 		UnityEngine.Object[] materials = Resources.FindObjectsOfTypeAll(typeof(Material));
 		foreach (Material t in materials)
-			materialSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
+			materialSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(t);
 
 		UnityEngine.Object[] anims = Resources.FindObjectsOfTypeAll(typeof(AnimationClip));
 		foreach (AnimationClip t in anims)
-			animationSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
+			animationSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(t);
 
 		UnityEngine.Object[] audios = Resources.FindObjectsOfTypeAll(typeof(AudioClip));
 		foreach (AudioClip t in audios)
-			audioSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
+			audioSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(t);
 
 
 		string msg = "\r\n\r\n------------------------------------------------------------------------------\r\n";
@@ -604,7 +642,7 @@ public class CrashReporter
 		msg += string.Format
 			(
 				//				"System Infomation\r\n\r\nModel:{0}, Name:{1}, Type:{2}, Ident:{3}\nSystem:{4}, Lang:{5}, MemSize:{6}, ProcCount:{7}, ProcType:x {8}\nScreen:{9}x{10}, DPI:{11}dpi, FullScreen:{12}, {13}, {14}, vmem: {15}, Fill: {16} Max Texture: {17}\n\nScene {18}, Unity Version {19}",
-				"System Infomation\r\n\r\nModel:{0}, Name:{1}, Type:{2}\nSystem:{3}, Lang:{4}, MemSize:{5}, ProcCount:{6}, ProcType:x {7}\nScreen:{8}x{9}, DPI:{10}dpi, FullScreen:{11}, {12}, {13}, vmem: {14}, Fill: {15} Max Texture: {16}\n\nScene {17}, Unity Version {18}",
+				"System Infomation\r\n\r\nModel:{0}, Name:{1}, Type:{2}\nSystem:{3}, Lang:{4}, MemSize:{5}, ProcCount:{6}, ProcType:x {7}\nScreen:{8}x{9}, DPI:{10}dpi, FullScreen:{11}, {12}, {13}, vmem: {14}, vmulti: {15} Max Texture: {16}\n\nScene {17}, Unity Version {18}",
 				SystemInfo.deviceModel,
 				SystemInfo.deviceName,
 				SystemInfo.deviceType,
@@ -623,10 +661,10 @@ public class CrashReporter
 				SystemInfo.graphicsDeviceName,
 				SystemInfo.graphicsDeviceVendor,
 				SystemInfo.graphicsMemorySize,
-				SystemInfo.graphicsPixelFillrate,
+				SystemInfo.graphicsMultiThreaded,
 				SystemInfo.maxTextureSize,
 
-				Application.loadedLevelName,
+				SceneManager.GetActiveScene().name,
 				Application.unityVersion
 			);
 
@@ -656,14 +694,14 @@ public class CrashReporter
 			yield return new WaitForSeconds(1);
 
 			//be sure no body else take control of log 
-			#if !UNITY_5
+#if !UNITY_5_4_OR_NEWER
 			Application.RegisterLogCallback (HandleException);
 			Application.RegisterLogCallbackThreaded (HandleExceptionThread);
-			#else
+#else
 
-			#endif
+#endif
 
-			if( m_listLogBufferThread.Count > 0 )
+			if ( m_listLogBufferThread.Count > 0 )
 			{
 				lock( m_listLogBufferThread )
 				{
@@ -735,22 +773,22 @@ public class CrashReporter
 
 	void Routine(IEnumerator pRoutine, Action pAction = null)
 	{
-		m_goMonoBehaviourObject.GetComponent<MonoBehaviour>().StartCoroutine(InvokeToRoutine(pRoutine, pAction));
+		StartCoroutine(InvokeToRoutine(pRoutine, pAction));
 	}
 
 	IEnumerator InvokeToRoutine(IEnumerator pRoutine, Action pAction)
 	{
-		yield return m_goMonoBehaviourObject.GetComponent<MonoBehaviour>().StartCoroutine(pRoutine);
+		yield return StartCoroutine(pRoutine);
 		if(pAction!=null)
 			pAction.Invoke();
 	}
 
 	public void SetCrashReporterOnlineInfo(string strConfigFileHost)
 	{
-#if !UNITY_EDITOR
+// #if !UNITY_EDITOR
 
 		m_bUpdateWaitServerInfo = true;
-		Routine(WaitForRequest(new WWW(strConfigFileHost + "?" + Time.time), (msg)=>{
+		Routine(WebRequest(strConfigFileHost + "?" + Time.time, null, (msg)=>{
 			string json = msg;
 			Hashtable table = SG.MiniJsonExtensions.hashtableFromJson(json);
 
@@ -794,6 +832,7 @@ public class CrashReporter
 				}
 
 			} catch (Exception ex) {
+				Debug.LogError(ex.Message);
 				m_eWriteMode = eCrashWriteType.EWRITEGAv3;
 			}
 
@@ -804,8 +843,9 @@ public class CrashReporter
 			m_bUpdateWaitServerInfo = false;
 		}));
 
-#endif
+// #endif
 	}
+	/* change from www to unitywebrequest
 	IEnumerator WaitForRequest(WWW www, Action<string> success, Action fail)
 	{
 		float timer = 0; 
@@ -828,6 +868,27 @@ public class CrashReporter
 			success.Invoke(www.text);
 		}  
 	}
+	*/
+	IEnumerator WebRequest(string url, WWWForm form, Action<string> success, Action fail)
+    {
+        UnityWebRequest request = new UnityWebRequest();
+		using (request = (form==null?UnityWebRequest.Get(url):UnityWebRequest.Post(url, form)))
+        {
+            yield return request.SendWebRequest();
+            if (request.isHttpError || request.isNetworkError)
+            {
+                string msg = request.error;
+				Debug.Log(msg);
+				fail.Invoke();
+            }
+            else
+            {
+                // Debug.Log(request.downloadHandler.text);
+                // Byte[] results = request.downloadHandler.data;
+				success.Invoke(request.downloadHandler.text);
+            }
+        }
+    }
 
 	void WriteFileLog(string message, string trace, bool bException)	
 	{
@@ -858,7 +919,6 @@ public class CrashReporter
 	public void SendUnreportedCrashReport()
 	{
 		Routine(WaitServerInfoRefresh());
-
 	}
 
 	IEnumerator WaitServerInfoRefresh()
