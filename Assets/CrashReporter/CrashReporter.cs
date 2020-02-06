@@ -575,21 +575,21 @@ public class CrashReporter
 
 		UnityEngine.Object[] textures = Resources.FindObjectsOfTypeAll(typeof(Texture));
 		foreach (Texture t in textures)
-			textureSize += Profiler.GetRuntimeMemorySize (t);
+			textureSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
 		UnityEngine.Object[] meshs = Resources.FindObjectsOfTypeAll(typeof(Mesh));
 		foreach (Mesh t in meshs)
-			meshSize += Profiler.GetRuntimeMemorySize (t);
+			meshSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
 		UnityEngine.Object[] materials = Resources.FindObjectsOfTypeAll(typeof(Material));
 		foreach (Material t in materials)
-			materialSize += Profiler.GetRuntimeMemorySize (t);
+			materialSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
 
 		UnityEngine.Object[] anims = Resources.FindObjectsOfTypeAll(typeof(AnimationClip));
 		foreach (AnimationClip t in anims)
-			animationSize += Profiler.GetRuntimeMemorySize (t);
+			animationSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
 
 		UnityEngine.Object[] audios = Resources.FindObjectsOfTypeAll(typeof(AudioClip));
 		foreach (AudioClip t in audios)
-			audioSize += Profiler.GetRuntimeMemorySize (t);
+			audioSize += UnityEngine.Profiling.Profiler.GetRuntimeMemorySize (t);
 
 
 		string msg = "\r\n\r\n------------------------------------------------------------------------------\r\n";
