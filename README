@@ -12,8 +12,8 @@ inst.StartCrashReporter (this.gameObject,
 //runtime controll                         
 inst.SetCrashReporterOnlineInfo("http://msg.devmdl.pmang.com/ConfigClient/crashreporter.info");
 
-
-
+//sending before crash info 
+inst.SendUnreportedCrashReport();
 
 //CDN DATA SAMPLE
 {
