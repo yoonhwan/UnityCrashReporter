@@ -8,19 +8,19 @@ UserID:none, UID:none, TeamName:none, TeamIdent:none
 ------------------------------------------------------------------------------
 System Infomation
 
-Model:MacPro6,1, Name:Queens9_SG의 Mac Pro, Type:Desktop
-System:Mac OS X 10.15.2, Lang:, MemSize:32768, ProcCount:8, ProcType:x Intel(R) Xeon(R) CPU E5-1620 v2 @ 3.70GHz
-Screen:1046x520, DPI:102dpi, FullScreen:True, AMD Radeon HD - FirePro D300, Apple, vmem: 2048, vmulti: True Max Texture: 16384
+Model:MacBookPro16,1, Name:yoonhwan-macpro, Type:Desktop
+System:Mac OS X 10.15.4, Lang:, MemSize:32768, ProcCount:16, ProcType:x Intel(R) Core(TM) i9-9880H CPU @ 2.30GHz
+Screen:1920x1080, DPI:102dpi, FullScreen:False, AMD Radeon Pro 5500M, Apple, vmem: 4080, vmulti: True Max Texture: 16384
 
-Scene CrashTestScene, Unity Version 2018.4.12f1
+Scene CrashTestScene, Unity Version 2019.3.0f6
 
 ------------------------------------------------------------------------------
 Memory Status
 
-Total:9068544Bytes
-Texture:7938694Bytes
-Mash:617108Bytes
-Material:40976Bytes
+Total:11399168Bytes
+Texture:8093361Bytes
+Mash:227820Bytes
+Material:77028Bytes
 Animation:0
 Audio:0
 
@@ -30,70 +30,57 @@ Log & Stack Trace
 
 ------------------------------------------------------------------------------
 Type : Log
-Time : 5.089706
+Time : 4.777798
 Condition : SendDebugToServer 
 Stack: UnityEngine.Debug:Log(Object)
-<SendDebugToServer>d__25:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:241)
+<SendDebugToServer>d__29:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:242)
 UnityEngine.MonoBehaviour:StartCoroutine(IEnumerator)
-<InvokeToRoutine>d__46:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:778)
+<InvokeToRoutine>d__50:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:788)
 UnityEngine.MonoBehaviour:StartCoroutine(IEnumerator)
-CrashReporter:Routine(IEnumerator, Action) (at Assets/CrashReporter/CrashReporter.cs:773)
-<UpdateCrashRepoter>d__42:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:738)
-UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr)
+CrashReporter:Routine(IEnumerator, Action) (at Assets/CrashReporter/CrashReporter.cs:783)
+<UpdateCrashRepoter>d__46:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:748)
+UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr) (at /Users/builduser/buildslave/unity/build/Runtime/Export/Scripting/Coroutines.cs:17)
 ------------------------------------------------------------------------------
 Type : Log
-Time : 5.087666
+Time : 4.776361
 Condition : CrashReporter Exception Catched
 Stack: UnityEngine.Debug:Log(Object)
-<UpdateCrashRepoter>d__42:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:715)
-UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr)
+<UpdateCrashRepoter>d__46:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:725)
+UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr) (at /Users/builduser/buildslave/unity/build/Runtime/Export/Scripting/Coroutines.cs:17)
 ------------------------------------------------------------------------------
-Type : Exception Time : 4.614916
+Type : Exception Time : 4.13862
  Condition : Exception: Exception of type 'System.Exception' was thrown.
-Stack: CrashTestScene.TestRun () (at Assets/CrashTestScene.cs:37)
-UnityEngine.Events.InvokableCall.Invoke () (at /Users/builduser/buildslave/unity/build/Runtime/Export/UnityEvent.cs:166)
-UnityEngine.Events.UnityEvent.Invoke () (at /Users/builduser/buildslave/unity/build/Runtime/Export/UnityEvent_0.cs:58)
-UnityEngine.UI.Button.Press () (at /Users/builduser/buildslave/unity/build/Extensions/guisystem/UnityEngine.UI/UI/Core/Button.cs:66)
-UnityEngine.UI.Button.OnPointerClick (UnityEngine.EventSystems.PointerEventData eventData) (at /Users/builduser/buildslave/unity/build/Extensions/guisystem/UnityEngine.UI/UI/Core/Button.cs:108)
-UnityEngine.EventSystems.ExecuteEvents.Execute (UnityEngine.EventSystems.IPointerClickHandler handler, UnityEngine.EventSystems.BaseEventData eventData) (at /Users/builduser/buildslave/unity/build/Extensions/guisystem/UnityEngine.UI/EventSystem/ExecuteEvents.cs:50)
-UnityEngine.EventSystems.ExecuteEvents.Execute[T] (UnityEngine.GameObject target, UnityEngine.EventSystems.BaseEventData eventData, UnityEngine.EventSystems.ExecuteEvents+EventFunction`1[T1] functor) (at /Users/builduser/buildslave/unity/build/Extensions/guisystem/UnityEngine.UI/EventSystem/ExecuteEvents.cs:261)
-UnityEngine.EventSystems.EventSystem:Update()
+Stack: CrashReporter.TestRun () (at Assets/CrashReporter/CrashReporter.cs:1034)
+CrashTestScene.TestRun () (at Assets/CrashTestScene.cs:36)
+UnityEngine.Events.InvokableCall.Invoke () (at /Users/builduser/buildslave/unity/build/Runtime/Export/UnityEvent/UnityEvent.cs:166)
+UnityEngine.Events.UnityEvent.Invoke () (at /Users/builduser/buildslave/unity/build/Runtime/Export/UnityEvent/UnityEvent/UnityEvent_0.cs:58)
+UnityEngine.UI.Button.Press () (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/UI/Core/Button.cs:68)
+UnityEngine.UI.Button.OnPointerClick (UnityEngine.EventSystems.PointerEventData eventData) (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/UI/Core/Button.cs:110)
+UnityEngine.EventSystems.ExecuteEvents.Execute (UnityEngine.EventSystems.IPointerClickHandler handler, UnityEngine.EventSystems.BaseEventData eventData) (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/EventSystem/ExecuteEvents.cs:50)
+UnityEngine.EventSystems.ExecuteEvents.Execute[T] (UnityEngine.GameObject target, UnityEngine.EventSystems.BaseEventData eventData, UnityEngine.EventSystems.ExecuteEvents+EventFunction`1[T1] functor) (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/EventSystem/ExecuteEvents.cs:261)
+UnityEngine.EventSystems.EventSystem:Update() (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/EventSystem/EventSystem.cs:377)
 ------------------------------------------------------------------------------
 Type : Exception
-Time : 4.614885
+Time : 4.138293
 Condition : Exception: Exception of type 'System.Exception' was thrown.
-Stack: CrashTestScene.TestRun () (at Assets/CrashTestScene.cs:37)
-UnityEngine.Events.InvokableCall.Invoke () (at /Users/builduser/buildslave/unity/build/Runtime/Export/UnityEvent.cs:166)
-UnityEngine.Events.UnityEvent.Invoke () (at /Users/builduser/buildslave/unity/build/Runtime/Export/UnityEvent_0.cs:58)
-UnityEngine.UI.Button.Press () (at /Users/builduser/buildslave/unity/build/Extensions/guisystem/UnityEngine.UI/UI/Core/Button.cs:66)
-UnityEngine.UI.Button.OnPointerClick (UnityEngine.EventSystems.PointerEventData eventData) (at /Users/builduser/buildslave/unity/build/Extensions/guisystem/UnityEngine.UI/UI/Core/Button.cs:108)
-UnityEngine.EventSystems.ExecuteEvents.Execute (UnityEngine.EventSystems.IPointerClickHandler handler, UnityEngine.EventSystems.BaseEventData eventData) (at /Users/builduser/buildslave/unity/build/Extensions/guisystem/UnityEngine.UI/EventSystem/ExecuteEvents.cs:50)
-UnityEngine.EventSystems.ExecuteEvents.Execute[T] (UnityEngine.GameObject target, UnityEngine.EventSystems.BaseEventData eventData, UnityEngine.EventSystems.ExecuteEvents+EventFunction`1[T1] functor) (at /Users/builduser/buildslave/unity/build/Extensions/guisystem/UnityEngine.UI/EventSystem/ExecuteEvents.cs:261)
-UnityEngine.EventSystems.EventSystem:Update()
+Stack: CrashReporter.TestRun () (at Assets/CrashReporter/CrashReporter.cs:1034)
+CrashTestScene.TestRun () (at Assets/CrashTestScene.cs:36)
+UnityEngine.Events.InvokableCall.Invoke () (at /Users/builduser/buildslave/unity/build/Runtime/Export/UnityEvent/UnityEvent.cs:166)
+UnityEngine.Events.UnityEvent.Invoke () (at /Users/builduser/buildslave/unity/build/Runtime/Export/UnityEvent/UnityEvent/UnityEvent_0.cs:58)
+UnityEngine.UI.Button.Press () (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/UI/Core/Button.cs:68)
+UnityEngine.UI.Button.OnPointerClick (UnityEngine.EventSystems.PointerEventData eventData) (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/UI/Core/Button.cs:110)
+UnityEngine.EventSystems.ExecuteEvents.Execute (UnityEngine.EventSystems.IPointerClickHandler handler, UnityEngine.EventSystems.BaseEventData eventData) (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/EventSystem/ExecuteEvents.cs:50)
+UnityEngine.EventSystems.ExecuteEvents.Execute[T] (UnityEngine.GameObject target, UnityEngine.EventSystems.BaseEventData eventData, UnityEngine.EventSystems.ExecuteEvents+EventFunction`1[T1] functor) (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/EventSystem/ExecuteEvents.cs:261)
+UnityEngine.EventSystems.EventSystem:Update() (at /Applications/Unity/Hub/Editor/2019.3.0f6/Unity.app/Contents/Resources/PackageManager/BuiltInPackages/com.unity.ugui/Runtime/EventSystem/EventSystem.cs:377)
 ------------------------------------------------------------------------------
-Type : Log Time : 2.321972
- Condition : CrashReporter Change Mode:EWRITESERVER
-Stack: UnityEngine.Debug:Log(Object)
-CrashReporter:<SetCrashReporterOnlineInfo>b__47_0(String) (at Assets/CrashReporter/CrashReporter.cs:837)
-<WebRequest>d__48:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:885)
-UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr)
-------------------------------------------------------------------------------
-Type : Log Time : 2.041977
+Type : Log Time : 1.627537
  Condition : Crash Repoter Sample Start
 Stack: UnityEngine.Debug:Log(Object)
-CrashTestScene:Start() (at Assets/CrashTestScene.cs:20)
+CrashTestScene:Start() (at Assets/CrashTestScene.cs:25)
 ------------------------------------------------------------------------------
 Type : Log
-Time : 2.321952
-Condition : CrashReporter Change Mode:EWRITESERVER
-Stack: UnityEngine.Debug:Log(Object)
-CrashReporter:<SetCrashReporterOnlineInfo>b__47_0(String) (at Assets/CrashReporter/CrashReporter.cs:837)
-<WebRequest>d__48:MoveNext() (at Assets/CrashReporter/CrashReporter.cs:885)
-UnityEngine.SetupCoroutine:InvokeMoveNext(IEnumerator, IntPtr)
-------------------------------------------------------------------------------
-Type : Log
-Time : 2.041274
+Time : 1.626728
 Condition : Crash Repoter Sample Start
 Stack: UnityEngine.Debug:Log(Object)
-CrashTestScene:Start() (at Assets/CrashTestScene.cs:20)
+CrashTestScene:Start() (at Assets/CrashTestScene.cs:25)
 

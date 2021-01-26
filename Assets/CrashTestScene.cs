@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Net.Sockets;
+using System.Threading;
 
 public class CrashTestScene : MonoBehaviour {
 
@@ -8,23 +10,21 @@ public class CrashTestScene : MonoBehaviour {
 	void Start () {
 
 		m_cCrashReporter = CrashReporter.StartCrashReporter (this.gameObject, 
-		                                     projectname: "CrashReporter Test",
-		                                     type: eCrashWriteType.EWRITEMAIL,
-		                                     clientVersion: "1.0.0",
+		                                     Application.productName,
+		                                     type: eCrashWriteType.EWRITEFILE,
+		                                     Application.version,
 		                                     gmailID: "",
 		                                     gmailPWD: "",
-		                                     mailingList: "",
-											 level: eExceptionType.Exception);
-		m_cCrashReporter.SetCrashReporterOnlineInfo("");
+		                                     mailingList: "yoonhwan.ko@neowiz.com;test@neowiz.com",
+											 level: eExceptionType.Exception | eExceptionType.Assert);
+		
+		m_cCrashReporter.SetIgnoreSubThreadExceptions(typeof(SemaphoreFullException), typeof(SocketException));
+
+		m_cCrashReporter.SetCrashReporterOnlineInfo("http://msg.devmdl.pmang.com/Temp/bd/ConfigClient/crashreporter.info");
 		m_cCrashReporter.SendUnreportedCrashReport();
 		Debug.Log("Crash Repoter Sample Start");
 	}
 	
-	// Update is called once per frame
-	void Update () {
-	
-	}
-
 	void Finish()
 	{
 		Debug.Log("Crash Repoter Sample Finish");
@@ -33,7 +33,6 @@ public class CrashTestScene : MonoBehaviour {
 
 	public void TestRun()
 	{
-		m_cCrashReporter.m_eWriteMode = eCrashWriteType.EWRITESERVER;
-		throw new System.Exception();
+		m_cCrashReporter.TestRun();
 	}
 }

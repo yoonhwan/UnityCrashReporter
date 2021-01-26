@@ -41,7 +41,7 @@ public class CrashReporter : MonoBehaviour
 {
 	static bool m_bCrashCatched = false;
 
-	public eCrashWriteType m_eWriteMode = eCrashWriteType.EWRITEOFF;
+	public eCrashWriteType m_eWriteMode {get;set;}
 	public bool m_bScreenShotSupport = true;
 	public string m_strBuild_version = "1.0";
 	public string m_strProjectName;
@@ -130,6 +130,7 @@ public class CrashReporter : MonoBehaviour
 	UserInfo m_stUserInfo = new UserInfo();
 
 	ServerInfo m_stServerInfo = new ServerInfo("");
+	private Dictionary<string, bool> m_dictIgnoreSubThreadException = new Dictionary<string, bool>();
 
 	public static CrashReporter StartCrashReporter(GameObject go, string projectname = "", eCrashWriteType type = eCrashWriteType.EWRITEMAIL, string clientVersion="", string gmailID = "", string gmailPWD = "", string mailingList = "", eExceptionType level = eExceptionType.Exception)
 	{
@@ -541,6 +542,9 @@ public class CrashReporter : MonoBehaviour
 
 		if(((int)m_tCrashReporterLevel & (int)Enum.Parse(typeof(eExceptionType), type.ToString())) != 0)
 		{
+			string exception = condition.Split(':')[0];
+			if (IsIgnoreSubThreadException(exception))
+				return;
 			m_iExceptionCount++;
 			m_tExceptionType = type;
 		}
@@ -575,6 +579,9 @@ public class CrashReporter : MonoBehaviour
 
 		if(((int)m_tCrashReporterLevel & (int)Enum.Parse(typeof(eExceptionType), type.ToString())) != 0)
 		{
+			string exception = condition.Split(':')[0];
+			if (IsIgnoreSubThreadException(exception))
+				return;
 			m_iExceptionCount++;
 			m_tExceptionType = type;
 		}
@@ -991,5 +998,39 @@ public class CrashReporter : MonoBehaviour
 		m_bCrashCatched = false;
 		m_tExceptionType = LogType.Log;
 	}
+	
+	
+	public void SetIgnoreSubThreadExceptions(params Type[] list)
+	{
+		for (int i = 0; i < list.Length; i++)
+		{
+			Type t = list[i];
+			m_dictIgnoreSubThreadException.Add(t.Name, true);    
+		}
+	}
 
+	public bool IsIgnoreSubThreadException(string exception)
+	{
+		if (m_dictIgnoreSubThreadException.ContainsKey(exception))
+			return true;
+		return false;
+	}
+
+
+	public void TestRun()
+	{
+		m_eWriteMode = eCrashWriteType.EWRITESERVER;
+		m_bUpdateWaitServerInfo = true;
+
+		m_stServerInfo.ClearSmtpList();
+		m_stServerInfo.ResetSmtpIndex();
+
+		m_stServerInfo.SetServerHost("http://mobile-crashreport.pmang.com:38320/sendmail/1");
+
+		m_stServerInfo.AddSmtp(new SmtpMailInfo("", "", "mailneo.ds.neowiz.com", false));       // 기존.
+		m_stServerInfo.AddSmtp(new SmtpMailInfo("", "", "jderms1.pmang.com", false));
+		m_bUpdateWaitServerInfo = false;
+		
+		throw new System.Exception();
+	}
 }
